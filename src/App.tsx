@@ -5,6 +5,8 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Info, Play, Clock, Star, Tv, Heart, History, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import { TopHeader } from './components/TopHeader';
+import { GamesHub } from './components/GamesHub';
+import { LudoGame } from './components/LudoGame';
 import { BottomNav } from './components/BottomNav';
 import { AdminPanel } from './components/AdminPanel';
 import { Shop } from './components/Shop';
@@ -935,6 +937,7 @@ const handleSelectMovie = (movie: any) => {
               onSearchFocus={setIsSearchFocused}
               onSearchSubmit={handleSearchCommit}
               onCartClick={() => setActiveTab('cart')}
+              onGamesClick={() => setActiveTab('games')}
               hasContinueWatching={continueWatchingIds.length > 0}
               onResumeLatest={() => {
                 if (continueWatchingIds.length > 0) {
@@ -1604,6 +1607,10 @@ const handleSelectMovie = (movie: any) => {
           </>
         ) : activeTab === 'discover' ? (
           <Discover content={filteredContent} onSelectMovie={handleSelectMovie} unlockedContent={unlockedContent} />
+        ) : activeTab === 'games' ? (
+          <GamesHub onSelectGame={(id) => setActiveTab(id)} />
+        ) : activeTab === 'ludo' ? (
+          <LudoGame onBack={() => setActiveTab('games')} onGameEnd={() => setActiveTab('games')} />
         ) : activeTab === 'explore' ? (
           <div className="pt-8 pb-32 px-4 min-h-screen">
             <h2 className="text-2xl font-bold text-white mb-6">Explore All Movies & Shows</h2>

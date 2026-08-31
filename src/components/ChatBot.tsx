@@ -154,15 +154,38 @@ export function ChatBot({ isOpen, onClose, availableMovies = [], onSelectMovie, 
                             whileHover={{ scale: 1.05, y: -5 }}
                             whileTap={{ scale: 0.95 }}
                             key={idx} 
-                            onClick={() => {
-                              const found = availableMovies.find(m => m.title.toLowerCase().trim() === sug.title.toLowerCase().trim() || (sug.id && (m.id === sug.id || m.firebase_id === sug.id)));
+                            
+                           onClick={() => {
+                              const cleanStr = (s) => s ? s.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+                              const sugClean = cleanStr(sug.title);
+                              let found = availableMovies.find(m => 
+                                cleanStr(m.title) === sugClean || 
+                                (sug.id && (m.id === sug.id || m.firebase_id === sug.id))
+                              );
+                              
+                              if (!found) {
+                                found = availableMovies.find(m => 
+                                  cleanStr(m.title).includes(sugClean) || 
+                                  sugClean.includes(cleanStr(m.title))
+                                );
+                              }
+                              
                               if (found && onSelectMovie) {
                                  onSelectMovie(found);
                                  onClose();
-                              } else {
-                                 console.log("Not in local DB:", sug.title);
+                              } else if (onSelectMovie) {
+                                 // Create a mock object so user sees something
+                                 onSelectMovie({
+                                   id: sug.id || 'ai-' + Date.now(),
+                                   title: sug.title,
+                                   poster_url: sug.imageUrl,
+                                   description: "Recommended by SanFlix AI. We are currently locating streaming sources for this title.",
+                                   genres: ["AI Recommendation"]
+                                 });
+                                 onClose();
                               }
                            }} 
+ 
                            className="relative bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden w-[160px] sm:w-[180px] group cursor-pointer hover:border-red-500 shadow-lg hover:shadow-red-500/20 transition-all duration-300"
                           >
                             {sug.imageUrl && (
