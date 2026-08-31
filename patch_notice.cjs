@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+const fs = require('fs');
+
+const content = `import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, ShieldAlert, ExternalLink, MessageCircle } from 'lucide-react';
 
@@ -97,3 +99,6 @@ export function NoticeModal() {
     </AnimatePresence>
   );
 }
+`;
+
+fs.writeFileSync('src/components/NoticeModal.tsx', content);
