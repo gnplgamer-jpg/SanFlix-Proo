@@ -1,0 +1,62 @@
+name: Build Android APK
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          yarn install
+          yarn add react-is
+
+      - name: Build Web App
+        run: yarn run build
+
+      - name: Install Capacitor
+        run: |
+          yarn add @capacitor/core
+          yarn add -D @capacitor/cli @capacitor/android @capacitor/assets
+
+      - name: Initialize Android Platform
+        run: |
+          npx cap add android
+          # Run the assets generator to apply the logo
+          npx @capacitor/assets generate --android || true
+          npx cap sync
+
+      - name: Setup Java JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Inject AdMob App ID
+        run: |
+          sed -i '/<application/a \        <meta-data android:name="com.google.android.gms.ads.APPLICATION_ID" android:value="ca-app-pub-8551073579787342~9404319474"/>' android/app/src/main/AndroidManifest.xml || true
+
+      - name: Build APK
+        run: |
+          cd android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk

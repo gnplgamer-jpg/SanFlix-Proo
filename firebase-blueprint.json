@@ -1,0 +1,18 @@
+{
+  "collections": [
+    {
+      "name": "SanFlix_Content",
+      "rules": [
+        { "action": "read", "condition": "true" },
+        { "action": "write", "condition": "true" }
+      ]
+    },
+    {
+      "name": "Trending",
+      "rules": [
+        { "action": "read", "condition": "true" },
+        { "action": "write", "condition": "true" }
+      ]
+    }
+  ]
+}

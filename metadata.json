@@ -1,0 +1,6 @@
+{
+  "name": "SanFlix Concept",
+  "description": "High-definition streaming application with dynamic search.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,13 @@
+{
+  "appId": "ca-app-pub-8551073579787342~9404319474",
+  "publisherId": "pub-8551073579787342",
+  "adSenseCustomerId": "977-386-9308",
+  "adUnits": {
+    "rewarded": "ca-app-pub-8551073579787342/1909350132",
+    "appOpen": "ca-app-pub-8551073579787342/4295463025",
+    "interstitial": "ca-app-pub-8551073579787342/5569393543",
+    "banner": "ca-app-pub-8551073579787342/8283186792",
+    "rewardedInterstitial": "ca-app-pub-8551073579787342/2982381352",
+    "nativeAdvanced": "ca-app-pub-8551073579787342/3214692946"
+  }
+}

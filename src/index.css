@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-zinc-950: #0a0a0a;
+}
+
+body {
+  background-color: #000;
+  color: #fff;
+  overscroll-behavior-y: none;
+  transition: background-color 0.3s;
+}
+
+body.light-theme {
+  background-color: #fff;
+}
+
+.light-theme #root {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.light-theme img, 
+.light-theme video {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(150%);
+  }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse-shadow {
+  0% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0.6); }
+  70% { box-shadow: 0 0 0 15px rgba(255, 75, 43, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 75, 43, 0); }
+}
+
+video::-webkit-media-controls-start-playback-button,
+video::-internal-media-controls-download-button {
+    display: none !important;
+    -webkit-appearance: none !important;
+    opacity: 0 !important;
+}
+
+video[poster] {
+    object-fit: cover !important;
+    background-color: #000000 !important;
+}
+
+video {
+    background: #000000 !important;
+    outline: none !important;
+}
