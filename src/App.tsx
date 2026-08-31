@@ -1,5 +1,6 @@
 import { Capacitor } from "@capacitor/core";
 import { AdMob } from "@capacitor-community/admob";
+import { UnityAds } from "capacitor-unity-ads";
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Info, Play, Star, Tv, Heart, History, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
@@ -25,8 +26,9 @@ import { ChatBot } from './components/ChatBot';
 import { TrendingVideos } from './components/TrendingVideos';
 import { UnlockModal } from './components/UnlockModal';
 import { SpinnerPage } from './components/SpinnerPage';
+import { BiometricLock } from './components/BiometricLock';
 import { Globe, Settings, X, Sparkles, Bot, ExternalLink } from 'lucide-react';
-import { db, collection, getDocs, onSnapshot, addDoc, query, doc, auth, onAuthStateChanged } from './firebase';
+import { db, collection, getDocs, onSnapshot, addDoc, query, doc } from './firebase';
 import { useCoinSystem } from './useCoinSystem';
 import { movies as staticMovies } from './data';
 
@@ -40,12 +42,19 @@ export default function App() {
       if (Capacitor.isNativePlatform()) {
         try {
           await AdMob.initialize({
-            requestTrackingAuthorization: true,
             testingDevices: [],
             initializeForTesting: false,
           });
         } catch(e) {
           console.error("AdMob Init Error", e);
+        }
+        try {
+          await UnityAds.initialize({
+            gameId: import.meta.env.VITE_UNITY_GAME_ID || "5687795", // Replace with correct ID if not matching
+            testMode: false
+          });
+        } catch(e) {
+          console.error("UnityAds Init Error", e);
         }
       }
     };
@@ -69,10 +78,14 @@ export default function App() {
   const [showPromo, setShowPromo] = useState(false);
   
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-    });
-    return () => unsubscribeAuth();
+    const savedUser = localStorage.getItem('sanflix_user');
+    if (savedUser) {
+      try {
+        setUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error(e);
+      }
+    }
   }, []);
 
 
@@ -126,6 +139,9 @@ export default function App() {
 
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [appLockEnabled, setAppLockEnabled] = useState(() => localStorage.getItem("sanflix_app_lock") === "true");
+  const [isAppLocked, setIsAppLocked] = useState(localStorage.getItem("sanflix_app_lock") === "true");
+
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -312,7 +328,7 @@ export default function App() {
             for (const entry of entries) {
               const title = entry.title?.$t || '';
               const content = entry.content?.$t || '';
-              const versionMatch = title.match(/v\d+\.\d+\.\d+/i) || content.match(/v\d+\.\d+\.\d+/i);
+              const versionMatch = title.match(/v\\d+\\.\\d+\\.\\d+/i) || content.match(/v\\d+\\.\\d+\\.\\d+/i);
               if (versionMatch) {
                 versionData = {
                   appName: "SANFLIX PRO",
@@ -367,7 +383,7 @@ export default function App() {
   }, []);
 
 const handleSelectMovie = (movie: any) => {
-    if (!user && !auth.currentUser) {
+    if (!user) {
       setPendingMovie(movie);
       setShowAuthModal(true);
       return;
@@ -388,7 +404,7 @@ const handleSelectMovie = (movie: any) => {
 
   const toggleMyList = (e: React.MouseEvent, movie: any) => {
     e.stopPropagation();
-    if (!user && !auth.currentUser) {
+    if (!user) {
       setShowAuthModal(true);
       return;
     }
@@ -528,7 +544,7 @@ const handleSelectMovie = (movie: any) => {
       
       // Auto add "Old is gold" if release year is <= 2010
       if (m.release_date) {
-        const match = String(m.release_date).match(/\b(19\d{2}|20\d{2})\b/);
+        const match = String(m.release_date).match(/\\b(19\\d{2}|20\\d{2})\\b/);
         if (match) {
            const year = parseInt(match[1], 10);
            if (year <= 2010) {
@@ -842,6 +858,7 @@ const handleSelectMovie = (movie: any) => {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-500/30">
+      {isAppLocked && <BiometricLock onUnlock={() => setIsAppLocked(false)} />}
       {batterySaver && (
         <div className="fixed inset-0 bg-black/40 pointer-events-none z-[9999]" style={{ mixBlendMode: 'multiply' }} />
       )}
@@ -915,7 +932,7 @@ const handleSelectMovie = (movie: any) => {
                     }
                     const fallbackUrl = lastUrl || latestMovie.streaming_link_1 || (latestMovie.episodes && latestMovie.episodes.length > 0 ? latestMovie.episodes[0].url : null);
                     if (fallbackUrl) {
-                      if (!user && !auth.currentUser) {
+                      if (!user) {
                         setPendingMovie(latestMovie);
                         setShowAuthModal(true);
                         return;
@@ -1415,7 +1432,7 @@ const handleSelectMovie = (movie: any) => {
                                 <button 
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (!user && !auth.currentUser) {
+                                    if (!user) {
                                       setPendingMovie(movie);
                                       setShowAuthModal(true);
                                       return;
@@ -1635,6 +1652,8 @@ const handleSelectMovie = (movie: any) => {
             isAdminUnlocked={isAdminUnlocked}
             setIsAdminUnlocked={setIsAdminUnlocked}
             onChangeTab={setActiveTab}
+            appLockEnabled={appLockEnabled}
+            setAppLockEnabled={setAppLockEnabled}
             batterySaver={batterySaver}
             setBatterySaver={setBatterySaver}
           />
@@ -2003,10 +2022,19 @@ const handleSelectMovie = (movie: any) => {
               setShowAuthModal(false);
               setPendingMovie(null);
             }} 
-            onSuccess={() => {
+            onSuccess={(newUser) => {
+              setUser(newUser);
               setShowAuthModal(false);
               if (pendingMovie) {
-                handleSelectMovie(pendingMovie);
+                setTimeout(() => {
+                  setSelectedMovie(pendingMovie);
+                  
+                  const movieId = pendingMovie.id || pendingMovie.firebase_id;
+                  let cwIds = [];
+                  try { cwIds = JSON.parse(localStorage.getItem('SANFLIX_CW') || '[]'); } catch(e){}
+                  const newCW = [movieId, ...cwIds.filter(id => id !== movieId)].slice(0, 15);
+                  localStorage.setItem('SANFLIX_CW', JSON.stringify(newCW));
+                }, 100);
                 setPendingMovie(null);
               }
             }} 

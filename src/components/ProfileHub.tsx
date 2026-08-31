@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Lock, Shield, Settings, AlertTriangle, Facebook, Youtube, Info, FileText, CheckCircle, Trash2, Smartphone, Download, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import { auth, googleProvider, signInWithPopup, signOut } from '../firebase';
+
 import { InstallPWA } from './InstallPWA';
 
 interface ProfileHubProps {
@@ -12,6 +12,8 @@ interface ProfileHubProps {
   setIsAdminUnlocked: (val: boolean) => void;
   onChangeTab: (tab: string) => void;
   batterySaver: boolean;
+  appLockEnabled: boolean;
+  setAppLockEnabled: (val: boolean) => void;
   setBatterySaver: (val: boolean) => void;
 }
 
@@ -23,6 +25,8 @@ export function ProfileHub({
   setIsAdminUnlocked,
   onChangeTab,
   batterySaver,
+  appLockEnabled,
+  setAppLockEnabled,
   setBatterySaver
 }: ProfileHubProps) {
   const openInChrome = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, url: string) => {

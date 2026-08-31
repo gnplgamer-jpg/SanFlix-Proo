@@ -1,8 +1,9 @@
 import { Capacitor } from "@capacitor/core";
 import { AdMob, RewardAdPluginEvents } from "@capacitor-community/admob";
+import { UnityAds } from "capacitor-unity-ads";
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Gift, Coins, PlayCircle, Loader2 } from 'lucide-react';
+import { X, Gift, Coins, PlayCircle, Loader2, AlertTriangle } from 'lucide-react';
 
 interface SpinnerPageProps {
   onClose: () => void;
@@ -27,11 +28,13 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
   const [spinning, setSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [showAd, setShowAd] = useState(false);
+  const [showAdBlockerMsg, setShowAdBlockerMsg] = useState(false);
   const [adTimer, setAdTimer] = useState(0);
   const [spinResult, setSpinResult] = useState<any>(null);
   const [cooldown, setCooldown] = useState(0);
   
   // Audio Refs
+  const DIRECT_AD_LINK = "https://www.google.com"; // TODO: Replace with Adsterra Direct Link
   const clickSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'));
   const spinSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2073/2073-preview.mp3'));
   const winSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'));
@@ -93,9 +96,47 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
     };
   }, []);
 
+  const triggerWebAd = () => {
+    if (DIRECT_AD_LINK && DIRECT_AD_LINK.includes("http")) {
+      window.open(DIRECT_AD_LINK, '_blank');
+    }
+    setShowAd(true);
+    setAdTimer(10); // Show "Verifying Sponsor" screen for 10 seconds
+  };
+
+  const triggerUnityAd = async () => {
+    try {
+      setSpinning(true);
+      await UnityAds.loadRewardedVideo({ placementId: "Rewarded_Android" });
+      const result = await UnityAds.showRewardedVideo();
+      if (result && result.success) {
+        finishSpin();
+      } else {
+        triggerWebAd(); // Ultimate fallback
+      }
+    } catch (e) {
+      console.error("UnityAds fallback error", e);
+      triggerWebAd(); // Ultimate fallback
+    } finally {
+      setSpinning(false);
+    }
+  };
+
   const handleSpinClick = async () => {
     if (spinning || showAd || cooldown > 0) return;
     playSound(clickSound);
+
+    // Ad-blocker detection
+    try {
+      await fetch('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', {
+        method: 'HEAD',
+        mode: 'no-cors',
+        cache: 'no-store'
+      });
+    } catch (e) {
+      setShowAdBlockerMsg(true);
+      return;
+    }
     
     if (Capacitor.isNativePlatform()) {
       try {
@@ -108,25 +149,23 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
           finishSpin();
         });
         AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-          AdMob.removeAllListeners();
           setSpinning(false);
         });
         AdMob.addListener(RewardAdPluginEvents.FailedToLoad, () => {
-          AdMob.removeAllListeners();
-          finishSpin();
+          // If AdMob fails (e.g. not on Play Store), fallback to Unity Ads
+          triggerUnityAd();
         });
         await AdMob.showRewardVideoAd();
       } catch (error) {
         console.error("AdMob Error", error);
-        finishSpin();
+        triggerUnityAd(); // Fallback
       }
     } else if (typeof (window as any).AndroidApp !== "undefined" && typeof (window as any).AndroidApp.showRewardedAd === "function") {
        (window as any).AndroidApp.showRewardedAd();
     } else if (typeof (window as any).SanFlixNativeBridge !== "undefined" && typeof (window as any).SanFlixNativeBridge.triggerAdUnlock === "function") {
        (window as any).SanFlixNativeBridge.triggerAdUnlock();
     } else {
-      setShowAd(true);
-      setAdTimer(5);
+      triggerWebAd();
     }
   };
 
@@ -343,6 +382,46 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
             >
               Awesome
             </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    
+      <AnimatePresence>
+        {showAdBlockerMsg && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[250] bg-black/90 backdrop-blur-sm flex flex-col items-center justify-center p-4"
+          >
+            <motion.div 
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl relative"
+            >
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4 border-2 border-red-500/50">
+                <AlertTriangle className="w-8 h-8 text-red-500" />
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">Ad-Blocker Detected</h3>
+              <p className="text-zinc-400 text-sm mb-6">
+                Please disable your ad-blocker to support SanFlix. We rely on ads to keep our streaming service free and provide you with daily coins.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={() => setShowAdBlockerMsg(false)}
+                  className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition-colors"
+                >
+                  I've disabled it (Retry)
+                </button>
+                <button 
+                  onClick={() => setShowAdBlockerMsg(false)}
+                  className="w-full py-3 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold rounded-xl transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
