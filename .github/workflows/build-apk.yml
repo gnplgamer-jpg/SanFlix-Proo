@@ -35,7 +35,8 @@ jobs:
 
       - name: Initialize Android Platform
         run: |
-          if [ ! -d "android" ]; then npx cap add android; fi
+          rm -rf android
+          npx cap add android
           # Run the assets generator to apply the logo
           npx @capacitor/assets generate --android --assetPath resources || npx @capacitor/assets generate --android --assetPath assets || true
           npx cap sync
