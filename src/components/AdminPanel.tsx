@@ -1264,7 +1264,7 @@ export function AdminPanel() {
 
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-800">
             <input type="checkbox" id="sanflixpro" name="is_sanflix_pro" checked={formData.is_sanflix_pro} onChange={handleInputChange} className="rounded border-zinc-700 text-red-600 focus:ring-red-600 bg-zinc-900" />
-            <label htmlFor="sanflixpro" className="text-sm text-zinc-300 font-medium">Add to SanFlix-Pro (Premium Content)</label>
+            <label htmlFor="sanflixpro" className="text-sm text-zinc-300 font-medium">Add to Premium Content (Premium Content)</label>
           </div>
           
           <div className="flex items-center gap-2 mt-4 pt-4 border-t border-zinc-800">

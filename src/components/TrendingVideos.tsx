@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
-import { TrendingUp, AlertCircle, Loader2, Play, Flame, Film } from 'lucide-react';
+import { TrendingUp, AlertCircle, Loader2, Play, Flame, Film, Clock } from 'lucide-react';
 
 interface TrendingVideo {
   title: string;
@@ -8,12 +8,38 @@ interface TrendingVideo {
 }
 
 interface TrendingVideosProps {
+  unlockedContent?: Record<string, number>;
   appMovies: any[];
   onSelectMovie: (movie: any) => void;
   onPlayUrl?: (url: string, title: string, movie?: any) => void;
 }
 
-export function TrendingVideos({ appMovies, onSelectMovie, onPlayUrl }: TrendingVideosProps) {
+
+const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
+  const [timeLeft, setTimeLeft] = React.useState(expiryTime - Date.now());
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(expiryTime - Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [expiryTime]);
+
+  if (timeLeft <= 0) return null;
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+  return (
+    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600/90 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold text-white shadow-lg border border-red-400/50 flex items-center gap-1 z-20">
+      <Clock className="w-3 h-3 animate-pulse" />
+      {hours}h {minutes}m {seconds}s
+    </div>
+  );
+};
+
+export function TrendingVideos({ appMovies, onSelectMovie, onPlayUrl , unlockedContent = {}}: TrendingVideosProps) {
   const [videos, setVideos] = useState<TrendingVideo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -77,11 +103,14 @@ export function TrendingVideos({ appMovies, onSelectMovie, onPlayUrl }: Trending
               >
                 <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-2 shadow-lg border border-zinc-800 group-hover:border-red-500 transition-all">
                   <img
-                    src={movie.poster_url || movie.imageUrl}
-                    alt={movie.title}
-                    className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                    loading="lazy"
-                  />
+            src={movie.poster_url || movie.imageUrl}
+            alt={movie.title}
+            className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
+            loading="lazy"
+          />
+          {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+            <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+          )}
                   <div className="absolute top-0 right-0 bg-red-600 text-white font-black text-xs px-2 py-1 rounded-bl-xl shadow-md z-10">
                     #{idx + 1}
                   </div>

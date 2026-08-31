@@ -1,4 +1,4 @@
-import { TrendingUp, Play, Star } from 'lucide-react';
+import { TrendingUp, Play, Star, Clock } from 'lucide-react';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 
 const categoriesDB = [
@@ -51,6 +51,31 @@ const categoriesDB = [
 ];
 
 const safeLower = (val: any) => String(val || '').toLowerCase();
+
+
+const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
+  const [timeLeft, setTimeLeft] = React.useState(expiryTime - Date.now());
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(expiryTime - Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [expiryTime]);
+
+  if (timeLeft <= 0) return null;
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+  return (
+    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600/90 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold text-white shadow-lg border border-red-400/50 flex items-center gap-1 z-20">
+      <Clock className="w-3 h-3 animate-pulse" />
+      {hours}h {minutes}m {seconds}s
+    </div>
+  );
+};
 
 export function Discover({ content = [], onSelectMovie }: { content?: any[], onSelectMovie?: (movie: any) => void }) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -280,11 +305,14 @@ export function Discover({ content = [], onSelectMovie }: { content?: any[], onS
                       >
                         <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50">
                           <img
-                            src={movie.poster_url || movie.imageUrl}
-                            alt={movie.title}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                            loading="lazy"
-                          />
+            src={movie.poster_url || movie.imageUrl}
+            alt={movie.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+          {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+            <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+          )}
                         </div>
                         <h3 className="text-sm font-medium leading-tight line-clamp-1">{movie.title}</h3>
                         <p className="text-[10px] text-zinc-400 mt-1">{movie.mapped_category_rail}</p>

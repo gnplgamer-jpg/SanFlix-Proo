@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SanFlix-Pro | Discover</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #09090B;
+            color: #ffffff;
+            -webkit-user-select: none;
+            user-select: none;
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            padding-bottom: 80px; /* Space for bottom nav */
+        }
+        
+        /* Hide Scrollbar but keep functionality */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .glass-nav {
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            background: rgba(9, 9, 11, 0.95);
+        }
+
+        .mature-glow {
+            box-shadow: 0 0 15px rgba(220, 38, 38, 0.4);
+        }
+        
+        .network-glow {
+            box-shadow: 0 0 15px rgba(217, 119, 6, 0.4);
+        }
+    </style>
+</head>
+<body class="min-h-screen relative">
+
+    <!-- STICKY TOP NAVIGATION BAR -->
+    <header class="sticky top-0 z-50 glass-nav border-b border-zinc-800/50 px-4 py-4">
+        <div class="flex items-center gap-3">
+            <div class="flex-1 relative">
+                <i class="fa-solid fa-search absolute left-4 top-1/2 -translate-y-1/2 text-zinc-500"></i>
+                <input 
+                    type="text" 
+                    id="searchInput"
+                    placeholder="Search movies, series, networks, 18+..." 
+                    class="w-full bg-zinc-900 border border-zinc-800 text-white text-sm rounded-full py-3.5 pl-11 pr-4 outline-none focus:border-zinc-500 transition-colors placeholder:text-zinc-500"
+                    onkeyup="handleSearch(this.value)"
+                >
+            </div>
+            <button id="filterBtn" class="w-12 h-12 shrink-0 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-center text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors" onclick="toggleFilters()">
+                <i class="fa-solid fa-sliders text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Expandable Filter Pills -->
+        <div id="filterTrack" class="hidden mt-4 overflow-x-auto hide-scrollbar pb-1">
+            <div class="flex items-center gap-2">
+                <button class="px-5 py-2 rounded-full bg-white text-black text-xs font-bold shrink-0">All Catalog</button>
+                <button class="px-5 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-bold hover:bg-zinc-800 shrink-0 transition-colors">Movies</button>
+                <button class="px-5 py-2 rounded-full bg-zinc-900 border border-zinc-800 text-zinc-300 text-xs font-bold hover:bg-zinc-800 shrink-0 transition-colors">Web Series</button>
+                <button class="px-5 py-2 rounded-full bg-red-950/40 border border-red-900/50 text-red-500 text-xs font-bold hover:bg-red-900/40 shrink-0 transition-colors">Mature 18+</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="px-4 py-6 max-w-3xl mx-auto space-y-8">
+        
+        <!-- REAL-TIME SEARCH HISTORY TRACK -->
+        <section id="historySection">
+            <div class="flex items-center justify-between mb-4">
+                <h2 class="text-sm font-black text-zinc-400 uppercase tracking-wider">Recent Discoveries</h2>
+                <button onclick="clearHistory()" class="text-xs font-bold text-zinc-500 hover:text-zinc-300 transition-colors uppercase tracking-wider">Clear</button>
+            </div>
+            <div class="flex overflow-x-auto gap-2 hide-scrollbar pb-2" id="historyTrack">
+                <!-- History chips injected via JS -->
+            </div>
+        </section>
+
+        <!-- DYNAMIC CATEGORY GRID CONTAINER -->
+        <div id="searchResults" class="space-y-8">
+            <!-- Sections injected via JS -->
+        </div>
+
+    </main>
+
+    <!-- FIXED BOTTOM APP BAR NAVIGATION -->
+    <nav class="fixed bottom-0 left-0 right-0 glass-nav border-t border-zinc-800/80 pb-safe pt-2 px-6 z-50">
+        <div class="flex items-center justify-between max-w-md mx-auto pb-4">
+            <button class="flex flex-col items-center gap-1.5 p-2 text-zinc-500 hover:text-zinc-300 transition-colors relative group">
+                <i class="fa-solid fa-house text-xl"></i>
+                <span class="text-[10px] font-bold">Home</span>
+                <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-red-600 rounded-b-md opacity-0 transition-opacity"></div>
+            </button>
+            
+            <button class="flex flex-col items-center gap-1.5 p-2 text-white relative group">
+                <i class="fa-solid fa-compass text-xl"></i>
+                <span class="text-[10px] font-bold">Discover</span>
+                <div class="absolute -top-2 left-1/2 -translate-x-1/2 w-8 h-1 bg-red-600 rounded-b-md"></div>
+            </button>
+            
+            <button class="flex flex-col items-center gap-1.5 p-2 text-zinc-500 hover:text-zinc-300 transition-colors relative group">
+                <i class="fa-solid fa-film text-xl"></i>
+                <span class="text-[10px] font-bold">Movies</span>
+            </button>
+            
+            <button class="flex flex-col items-center gap-1.5 p-2 text-zinc-500 hover:text-zinc-300 transition-colors relative group">
+                <i class="fa-solid fa-tv text-xl"></i>
+                <span class="text-[10px] font-bold">TV Shows</span>
+            </button>
+            
+            <button class="flex flex-col items-center gap-1.5 p-2 text-zinc-500 hover:text-zinc-300 transition-colors relative group">
+                <i class="fa-regular fa-circle-user text-xl"></i>
+                <span class="text-[10px] font-bold">Profile</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- REVENUE-READY JAVASCRIPT REALTIME SEARCH LOGIC -->
+    <script>
+        // State
+        let searchHistory = ["ULLU", "Hot Web Series", "Action", "MMS Viral", "DesiFlix"];
+        
+        // Mock Database Array
+        const categoriesDB = [
+            {
+                section: "MOVIES CATEGORIES",
+                id: "section-1",
+                items: [
+                    { title: "Drama & Romance", bgClass: "from-blue-600/20 to-cyan-600/5", icon: "fa-masks-theater", keywords: ["drama", "romance", "love", "emotional"] },
+                    { title: "Action & Thriller", bgClass: "from-amber-600/20 to-orange-600/5", icon: "fa-burst", keywords: ["action", "thriller", "suspense", "fight"] },
+                    { title: "Sci-Fi & Fantasy", bgClass: "from-indigo-600/20 to-purple-600/5", icon: "fa-shuttle-space", keywords: ["scifi", "sci-fi", "fantasy", "space", "magic"] },
+                    { title: "Horror & Mystery", bgClass: "from-zinc-700/40 to-zinc-900/10", icon: "fa-ghost", keywords: ["horror", "mystery", "scary", "ghost"] },
+                    { title: "Comedy & Family", bgClass: "from-emerald-600/20 to-teal-600/5", icon: "fa-face-laugh-squint", keywords: ["comedy", "family", "funny", "laugh"] },
+                    { title: "Historical & Epic", bgClass: "from-yellow-700/20 to-amber-900/5", icon: "fa-scroll", keywords: ["historical", "epic", "history", "ancient"] }
+                ]
+            },
+            {
+                section: "WEB SERIES CATEGORIES",
+                id: "section-2",
+                items: [
+                    { title: "Binge-Thriller", bgClass: "from-teal-600/20 to-cyan-900/5", icon: "fa-user-secret", keywords: ["binge", "thriller", "series", "web"] },
+                    { title: "Workplace Comedy", bgClass: "from-lime-600/20 to-emerald-900/5", icon: "fa-building", keywords: ["workplace", "comedy", "office", "funny"] },
+                    { title: "Anthology Series", bgClass: "from-fuchsia-600/20 to-pink-950/5", icon: "fa-layer-group", keywords: ["anthology", "series", "collection"] },
+                    { title: "Limited Series", bgClass: "from-sky-600/20 to-indigo-950/5", icon: "fa-calendar-check", keywords: ["limited", "series", "short"] },
+                    { title: "Cyberpunk/Dystopian", bgClass: "from-violet-600/20 to-purple-950/5", icon: "fa-robot", keywords: ["cyberpunk", "dystopian", "future", "sci-fi"] },
+                    { title: "Teen / YA Drama", bgClass: "from-pink-600/20 to-rose-950/5", icon: "fa-graduation-cap", keywords: ["teen", "young", "adult", "drama", "ya"] }
+                ]
+            },
+            {
+                section: "ADULT / MATURE (18+) EXCLUSIVES",
+                id: "section-3",
+                items: [
+                    { title: "Erotic Thriller", bgClass: "from-red-950/80 to-red-900/20", icon: "fa-fire-flame-curved", extraClass: "mature-glow", keywords: ["erotic", "thriller", "hot", "18+", "mature"] },
+                    { title: "Gore & Splatter", bgClass: "from-red-900/40 to-zinc-950", icon: "fa-droplet", keywords: ["gore", "splatter", "blood", "horror", "18+"] },
+                    { title: "Neo-Noir / Edgy", bgClass: "from-neutral-800 to-zinc-950", icon: "fa-eye-slash", keywords: ["neo-noir", "edgy", "dark", "mystery"] },
+                    { title: "Dark Romance", bgClass: "from-rose-950/70 to-zinc-900", icon: "fa-heart-broken", keywords: ["dark", "romance", "forbidden", "love"] },
+                    { title: "Forbidden Melodrama", bgClass: "from-purple-950/60 to-neutral-900", icon: "fa-door-closed", keywords: ["forbidden", "melodrama", "drama", "18+"] },
+                    { title: "ULLU Originals", bgClass: "from-yellow-600/20 to-amber-600/5", icon: "fa-crown", extraClass: "network-glow", keywords: ["ullu", "originals", "hot", "desi", "web series"] },
+                    { title: "KOOKU Premium", bgClass: "from-amber-600/20 to-yellow-600/5", icon: "fa-star", extraClass: "network-glow", keywords: ["kooku", "premium", "hot", "desi"] },
+                    { title: "PRIMESHOTS App", bgClass: "from-blue-900/40 to-blue-950", icon: "fa-video", extraClass: "network-glow", keywords: ["primeshots", "app", "hot", "desi"] },
+                    { title: "CHULLTV Network", bgClass: "from-orange-600/20 to-orange-950/5", icon: "fa-bolt", extraClass: "network-glow", keywords: ["chulltv", "network", "hot", "desi"] },
+                    { title: "HOTX VIP", bgClass: "from-purple-600/20 to-purple-950/5", icon: "fa-gem", extraClass: "network-glow", keywords: ["hotx", "vip", "hot", "desi"] },
+                    { title: "DESIFLIX Streaming", bgClass: "from-red-800/40 to-red-950", icon: "fa-play", extraClass: "network-glow", keywords: ["desiflix", "streaming", "hot", "desi", "viral"] },
+                    { title: "Hot Web Series", bgClass: "from-rose-800/30 to-zinc-900", icon: "fa-wand-magic-sparkles", extraClass: "mature-glow", keywords: ["hot", "web series", "desi", "18+"] },
+                    { title: "MMS Viral Video", bgClass: "from-red-950 to-black", icon: "fa-clapperboard", extraClass: "mature-glow", keywords: ["mms", "viral", "video", "hot", "leaked"] },
+                    { title: "Short Films Hub", bgClass: "from-cyan-900/30 to-zinc-900", icon: "fa-film", keywords: ["short", "films", "hub", "indie"] }
+                ]
+            }
+        ];
+
+        // Initialization
+        document.addEventListener("DOMContentLoaded", () => {
+            renderHistory();
+            renderCategories("");
+        });
+
+        // UI Toggle logic
+        function toggleFilters() {
+            const track = document.getElementById("filterTrack");
+            if (track.classList.contains("hidden")) {
+                track.classList.remove("hidden");
+            } else {
+                track.classList.add("hidden");
+            }
+        }
+
+        // History logic
+        function renderHistory() {
+            const track = document.getElementById("historyTrack");
+            const section = document.getElementById("historySection");
+            
+            if (searchHistory.length === 0) {
+                section.style.display = "none";
+                return;
+            }
+            
+            section.style.display = "block";
+            track.innerHTML = searchHistory.map(term => `
+                <button onclick="applySearch('${term}')" class="px-4 py-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-300 text-sm hover:border-zinc-500 hover:text-white transition-colors shrink-0 whitespace-nowrap">
+                    <i class="fa-solid fa-clock-rotate-left mr-2 text-zinc-500"></i> ${term}
+                </button>
+            `).join("");
+        }
+
+        function clearHistory() {
+            searchHistory = [];
+            renderHistory();
+        }
+
+        function applySearch(term) {
+            const input = document.getElementById("searchInput");
+            input.value = term;
+            handleSearch(term);
+        }
+
+        function addToHistory(term) {
+            const t = term.trim();
+            if(!t) return;
+            if (searchHistory.includes(t)) {
+                searchHistory = searchHistory.filter(i => i !== t);
+            }
+            searchHistory.unshift(t);
+            if (searchHistory.length > 8) searchHistory.pop();
+            renderHistory();
+        }
+
+        // Real-time Search Pipeline
+        function handleSearch(query) {
+            const normalizedQuery = query.toLowerCase().trim();
+            renderCategories(normalizedQuery);
+        }
+
+        // Handle Enter key for search history addition
+        document.getElementById("searchInput").addEventListener("keypress", function(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                addToHistory(this.value);
+            }
+        });
+
+        // Dynamic rendering engine
+        function renderCategories(query) {
+            const container = document.getElementById("searchResults");
+            container.innerHTML = "";
+            let hasAnyResults = false;
+
+            categoriesDB.forEach(section => {
+                // Filter items in section
+                const matchedItems = section.items.filter(item => {
+                    if (!query) return true;
+                    const matchesTitle = item.title.toLowerCase().includes(query);
+                    const matchesKeywords = item.keywords.some(kw => kw.toLowerCase().includes(query));
+                    return matchesTitle || matchesKeywords;
+                });
+
+                if (matchedItems.length > 0) {
+                    hasAnyResults = true;
+                    // Build Section HTML
+                    const sectionHTML = `
+                        <section id="${section.id}">
+                            <h3 class="text-sm font-black text-white uppercase tracking-wider mb-4 border-l-4 border-red-600 pl-3">${section.section}</h3>
+                            <div class="grid grid-cols-2 gap-3">
+                                ${matchedItems.map(item => `
+                                    <div class="h-24 rounded-xl relative overflow-hidden bg-gradient-to-br ${item.bgClass} border border-white/5 p-4 flex flex-col justify-end group cursor-pointer hover:scale-[1.02] transition-transform duration-300 ${item.extraClass || ''}">
+                                        <i class="fa-solid ${item.icon} absolute top-3 right-3 text-2xl text-white/20 group-hover:text-white/40 transition-colors"></i>
+                                        <h4 class="font-bold text-sm text-white drop-shadow-md z-10 leading-tight">${item.title}</h4>
+                                    </div>
+                                `).join("")}
+                            </div>
+                        </section>
+                    `;
+                    container.insertAdjacentHTML("beforeend", sectionHTML);
+                }
+            });
+
+            if (!hasAnyResults) {
+                container.innerHTML = `
+                    <div class="text-center py-12">
+                        <div class="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center mx-auto mb-4 border border-zinc-800">
+                            <i class="fa-solid fa-magnifying-glass text-2xl text-zinc-500"></i>
+                        </div>
+                        <h3 class="text-white font-bold mb-2">No results found</h3>
+                        <p class="text-zinc-500 text-sm">We couldn't find any categories matching "${query}"</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

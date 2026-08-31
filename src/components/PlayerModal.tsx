@@ -11,12 +11,11 @@ interface PlayerModalProps {
   allContent?: any[];
   onSelectMovie?: (movie: any) => void;
   onPlayVideo?: (url: string, movie: any) => void;
-  isSubscribed?: boolean;
-  isUnlocked?: boolean;
+    isUnlocked?: boolean;
   onRequireUnlock?: () => void;
 }
 
-export function PlayerModal({ movie, onClose, allContent = [], onSelectMovie, onPlayVideo, isSubscribed = false, isUnlocked = false, onRequireUnlock }: PlayerModalProps) {
+export function PlayerModal({ movie, onClose, allContent = [], onSelectMovie, onPlayVideo, isUnlocked = false, onRequireUnlock }: PlayerModalProps) {
   const [pendingActionUrl, setPendingActionUrl] = useState<string | null>(null);
   const [pendingActionType, setPendingActionType] = useState<'play' | 'download'>('play');
   const [showAgeWarning, setShowAgeWarning] = useState(false);
@@ -178,7 +177,7 @@ export function PlayerModal({ movie, onClose, allContent = [], onSelectMovie, on
 
   const checkUnlockAndProceed = (url: string) => {
     setShowAgeWarning(false);
-    if (!isSubscribed && !isUnlocked && onRequireUnlock) {
+    if (!isUnlocked && onRequireUnlock) {
       onRequireUnlock();
     } else {
       proceedToPlayer(url);

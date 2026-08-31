@@ -3,7 +3,7 @@ import { AdMob, RewardAdPluginEvents } from "@capacitor-community/admob";
 import { UnityAds } from "capacitor-unity-ads";
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Gift, Coins, PlayCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { X, Gift, Coins, PlayCircle, Loader2, AlertTriangle, CalendarCheck, Film, CheckCircle } from 'lucide-react';
 
 interface SpinnerPageProps {
   onClose: () => void;
@@ -32,6 +32,9 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
   const [adTimer, setAdTimer] = useState(0);
   const [spinResult, setSpinResult] = useState<any>(null);
   const [cooldown, setCooldown] = useState(0);
+  const [adPurpose, setAdPurpose] = useState<'spin' | 'mission' | 'checkin'>('spin');
+  const [dailyCheckInClaimed, setDailyCheckInClaimed] = useState(false);
+  const [trailerClaimed, setTrailerClaimed] = useState(false);
   
   // Audio Refs
   const DIRECT_AD_LINK = "https://www.google.com"; // TODO: Replace with Adsterra Direct Link
@@ -58,7 +61,13 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
       interval = setInterval(() => setAdTimer(prev => prev - 1), 1000);
     } else if (showAd && adTimer === 0) {
       setShowAd(false);
-      finishSpin();
+      if (adPurpose === 'spin') {
+        finishSpin();
+      } else {
+        onReward(20);
+        setTrailerClaimed(true);
+        localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true');
+      }
     }
     return () => clearInterval(interval);
   }, [showAd, adTimer]);
@@ -96,7 +105,8 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
     };
   }, []);
 
-  const triggerWebAd = () => {
+  const triggerWebAd = (purpose: 'spin' | 'mission' | 'checkin' = 'spin') => {
+    setAdPurpose(purpose);
     if (DIRECT_AD_LINK && DIRECT_AD_LINK.includes("http")) {
       window.open(DIRECT_AD_LINK, '_blank');
     }
@@ -104,21 +114,117 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
     setAdTimer(10); // Show "Verifying Sponsor" screen for 10 seconds
   };
 
-  const triggerUnityAd = async () => {
+  const triggerUnityAd = async (purpose: 'spin' | 'mission' | 'checkin' = 'spin') => {
+    setAdPurpose(purpose);
     try {
       setSpinning(true);
       await UnityAds.loadRewardedVideo({ placementId: "Rewarded_Android" });
       const result = await UnityAds.showRewardedVideo();
       if (result && result.success) {
-        finishSpin();
+        if (purpose === 'spin') { finishSpin(); }
+        else if (purpose === 'checkin') {
+          onReward(15);
+          setDailyCheckInClaimed(true);
+          localStorage.setItem('daily_checkin_' + new Date().toDateString(), 'true');
+        } else {
+          onReward(20);
+          setTrailerClaimed(true);
+          localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true');
+        }
       } else {
-        triggerWebAd(); // Ultimate fallback
+        triggerWebAd(purpose); // Ultimate fallback
       }
     } catch (e) {
       console.error("UnityAds fallback error", e);
-      triggerWebAd(); // Ultimate fallback
+      triggerWebAd(purpose); // Ultimate fallback
     } finally {
       setSpinning(false);
+    }
+  };
+
+  useEffect(() => {
+    const today = new Date().toDateString();
+    if (localStorage.getItem('daily_checkin_' + today) === 'true') setDailyCheckInClaimed(true);
+    if (localStorage.getItem('daily_trailer_' + today) === 'true') setTrailerClaimed(true);
+  }, []);
+
+  const handleClaimCheckIn = async () => {
+    if (dailyCheckInClaimed || spinning || showAd) return;
+    playSound(clickSound);
+
+    try {
+      await fetch('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
+    } catch (e) {
+      setShowAdBlockerMsg(true);
+      return;
+    }
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        setSpinning(true);
+        await AdMob.prepareRewardVideoAd({
+          adId: "ca-app-pub-8551073579787342/1909350132",
+          isTesting: false
+        });
+        
+        AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
+          onReward(15);
+          setDailyCheckInClaimed(true);
+          localStorage.setItem('daily_checkin_' + new Date().toDateString(), 'true');
+        });
+        AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+          setSpinning(false);
+        });
+        AdMob.addListener(RewardAdPluginEvents.FailedToLoad, () => {
+          triggerUnityAd('checkin');
+        });
+        await AdMob.showRewardVideoAd();
+      } catch (error) {
+        console.error("AdMob Error", error);
+        triggerUnityAd('checkin');
+      }
+    } else {
+      triggerWebAd('checkin');
+    }
+  };
+
+  const handleTrailerMission = async () => {
+    if (trailerClaimed || spinning || showAd) return;
+    playSound(clickSound);
+
+    try {
+      await fetch('https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js', { method: 'HEAD', mode: 'no-cors', cache: 'no-store' });
+    } catch (e) {
+      setShowAdBlockerMsg(true);
+      return;
+    }
+
+    if (Capacitor.isNativePlatform()) {
+      try {
+        setSpinning(true);
+        await AdMob.prepareRewardVideoAd({
+          adId: "ca-app-pub-8551073579787342/1909350132",
+          isTesting: false
+        });
+        
+        AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
+          onReward(20);
+          setTrailerClaimed(true);
+          localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true');
+        });
+        AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+          setSpinning(false);
+        });
+        AdMob.addListener(RewardAdPluginEvents.FailedToLoad, () => {
+          triggerUnityAd('mission');
+        });
+        await AdMob.showRewardVideoAd();
+      } catch (error) {
+        console.error("AdMob Error", error);
+        triggerUnityAd('mission');
+      }
+    } else {
+      triggerWebAd('mission');
     }
   };
 
@@ -292,9 +398,65 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
             )}
           </button>
           <p className="text-zinc-500 text-sm font-medium">Watch a short sponsored video to spin!</p>
-        </div>
-      </div>
+        
+        {/* Daily Missions Section */}
+        <div className="w-full max-w-sm mt-8 space-y-4">
+          <div className="flex items-center gap-2 mb-2">
+            <h3 className="text-xl font-bold text-white">Daily Missions</h3>
+            <span className="bg-red-500/20 text-red-500 text-xs font-bold px-2 py-0.5 rounded">NEW</span>
+          </div>
+          
+          {/* Check-in Mission */}
+          <div className={`bg-zinc-900 border ${dailyCheckInClaimed ? 'border-green-500/30' : 'border-zinc-800'} rounded-2xl p-4 flex items-center justify-between transition-all`}>
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${dailyCheckInClaimed ? 'bg-green-500/10' : 'bg-zinc-800'}`}>
+                <CalendarCheck className={`w-6 h-6 ${dailyCheckInClaimed ? 'text-green-500' : 'text-zinc-400'}`} />
+              </div>
+              <div>
+                <h4 className="text-white font-bold">VIP Check-in</h4>
+                <p className="text-yellow-500 text-sm font-medium">+15 Coins (Ad)</p>
+              </div>
+            </div>
+            <button 
+              onClick={handleClaimCheckIn}
+              disabled={dailyCheckInClaimed}
+              className={`px-4 py-2 rounded-xl font-bold transition-all ${
+                dailyCheckInClaimed 
+                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
+                  : 'bg-white text-black hover:bg-zinc-200 active:scale-95'
+              }`}
+            >
+              {dailyCheckInClaimed ? <CheckCircle className="w-5 h-5" /> : 'Claim'}
+            </button>
+          </div>
 
+          {/* Watch Trailer Mission */}
+          <div className={`bg-zinc-900 border ${trailerClaimed ? 'border-green-500/30' : 'border-zinc-800'} rounded-2xl p-4 flex items-center justify-between transition-all`}>
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${trailerClaimed ? 'bg-green-500/10' : 'bg-zinc-800'}`}>
+                <Film className={`w-6 h-6 ${trailerClaimed ? 'text-green-500' : 'text-zinc-400'}`} />
+              </div>
+              <div>
+                <h4 className="text-white font-bold">Watch Trailer</h4>
+                <p className="text-yellow-500 text-sm font-medium">+20 Coins (Ad)</p>
+              </div>
+            </div>
+            <button 
+              onClick={handleTrailerMission}
+              disabled={trailerClaimed || showAd || spinning}
+              className={`px-4 py-2 rounded-xl font-bold transition-all ${
+                trailerClaimed 
+                  ? 'bg-zinc-800 text-zinc-500 cursor-not-allowed' 
+                  : 'bg-white text-black hover:bg-zinc-200 active:scale-95'
+              }`}
+            >
+              {trailerClaimed ? <CheckCircle className="w-5 h-5" /> : 'Watch'}
+            </button>
+          </div>
+        </div>
+
+      </div>
+      </div>
       <AnimatePresence>
         {showAd && (
           <motion.div 
@@ -312,7 +474,7 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
                 </span>
                 <button 
                   disabled={adTimer > 0} 
-                  onClick={() => { setShowAd(false); finishSpin(); }}
+                  onClick={() => { setShowAd(false); if (adPurpose === 'spin') { finishSpin(); } else if (adPurpose === 'checkin') { onReward(15); setDailyCheckInClaimed(true); localStorage.setItem('daily_checkin_' + new Date().toDateString(), 'true'); } else { onReward(20); setTrailerClaimed(true); localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true'); } }}
                   className={`w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800 text-white transition-opacity ${adTimer > 0 ? 'opacity-50 cursor-not-allowed' : 'opacity-100 hover:bg-zinc-700'}`}
                 >
                   <X size={18} />

@@ -1,4 +1,6 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/App.tsx', 'utf-8');
-code = code.replace("\\nimport { ChatBot }", "\nimport { ChatBot }");
-fs.writeFileSync('src/App.tsx', code);
+let content = fs.readFileSync('src/App.tsx', 'utf8');
+
+content = content.replace(/import \{ Info, Play/, 'import { Info, Play, Clock');
+
+fs.writeFileSync('src/App.tsx', content);

@@ -1,0 +1,14 @@
+[
+	{
+		"pkg": "@aparajita/capacitor-biometric-auth",
+		"classpath": "com.aparajita.capacitor.biometricauth.BiometricAuthNative"
+	},
+	{
+		"pkg": "@capacitor-community/admob",
+		"classpath": "com.getcapacitor.community.admob.AdMob"
+	},
+	{
+		"pkg": "capacitor-unity-ads",
+		"classpath": "com.eliazavatta.plugins.unityads.UnityadsPlugin"
+	}
+]

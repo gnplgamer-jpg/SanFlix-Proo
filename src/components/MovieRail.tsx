@@ -1,6 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Star, ChevronRight, Heart, Calendar, Clock, ArrowRight, TrendingUp } from 'lucide-react';
 
+
+const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
+  const [timeLeft, setTimeLeft] = useState(expiryTime - Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(expiryTime - Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [expiryTime]);
+
+  if (timeLeft <= 0) return null;
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+  return (
+    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600/90 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold text-white shadow-lg border border-red-400/50 flex items-center gap-1 z-20">
+      <Clock className="w-3 h-3 animate-pulse" />
+      {hours}h {minutes}m {seconds}s
+    </div>
+  );
+};
+
 const LazyImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
   const [shouldLoad, setShouldLoad] = useState(false);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -46,10 +71,11 @@ interface MovieRailProps {
   onSeeAll?: () => void;
   onToggleMyList?: (e: React.MouseEvent, movie: any) => void;
   myListIds?: string[];
+  unlockedContent?: Record<string, number>;
   continueWatchingIds?: string[];
 }
 
-export function MovieRail({ title, emoji, movies, onSelectMovie, colorClass = "border-red-600", isTop10 = false, isComingSoon = false, onSeeAll, onToggleMyList, myListIds = [], continueWatchingIds = [] }: MovieRailProps) {
+export function MovieRail({ title, emoji, movies, onSelectMovie, colorClass = "border-red-600", isTop10 = false, isComingSoon = false, onSeeAll, onToggleMyList, myListIds = [], continueWatchingIds = [], unlockedContent = {} }: MovieRailProps) {
   const [progressData, setProgressData] = useState<Record<string, { currentTime: number, duration: number }>>({});
 
   useEffect(() => {

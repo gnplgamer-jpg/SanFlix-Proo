@@ -54,12 +54,12 @@ export function useCoinSystem(user: any) {
   };
 
   const unlockMovie = async (movieId: string): Promise<boolean> => {
-    if (!user || coins < 1) return false;
+    if (!user || coins < 10) return false;
     
-    // 6 hours expiry
-    const expiryTime = Date.now() + (6 * 60 * 60 * 1000);
+    // 12 hours expiry
+    const expiryTime = Date.now() + (12 * 60 * 60 * 1000);
     const newUnlocked = { ...unlockedContent, [movieId]: expiryTime };
-    const newCoins = coins - 1;
+    const newCoins = coins - 10;
     
     setCoins(newCoins);
     setUnlockedContent(newUnlocked);

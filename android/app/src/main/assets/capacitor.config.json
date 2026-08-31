@@ -1,0 +1,11 @@
+{
+	"appId": "com.sanflix.app",
+	"appName": "SanFlix",
+	"webDir": "dist",
+	"bundledWebRuntime": false,
+	"plugins": {
+		"AdMob": {
+			"appId": "ca-app-pub-8551073579787342~9404319474"
+		}
+	}
+}

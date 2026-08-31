@@ -1,11 +1,37 @@
-import { Star, Play, TrendingUp } from 'lucide-react';
+import { Star, Play, TrendingUp, Clock } from 'lucide-react';
 
 interface MoviesProps {
+  unlockedContent?: Record<string, number>;
   movies: any[];
   onSelect: (movie: any) => void;
 }
 
-export function Movies({ movies, onSelect }: MoviesProps) {
+
+const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
+  const [timeLeft, setTimeLeft] = React.useState(expiryTime - Date.now());
+
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(expiryTime - Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [expiryTime]);
+
+  if (timeLeft <= 0) return null;
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+  return (
+    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600/90 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold text-white shadow-lg border border-red-400/50 flex items-center gap-1 z-20">
+      <Clock className="w-3 h-3 animate-pulse" />
+      {hours}h {minutes}m {seconds}s
+    </div>
+  );
+};
+
+export function Movies({ movies, onSelect , unlockedContent = {}}: MoviesProps) {
   return (
     <div className="px-4 py-6 bg-zinc-950 min-h-screen text-white">
       <div className="flex items-center justify-between mb-6">
@@ -25,11 +51,14 @@ export function Movies({ movies, onSelect }: MoviesProps) {
               onClick={() => onSelect(movie)}
             >
               <img
-                src={movie.poster_url || movie.imageUrl}
-                alt={movie.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                loading="lazy"
-              />
+            src={movie.poster_url || movie.imageUrl}
+            alt={movie.title}
+            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+            loading="lazy"
+          />
+          {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+            <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+          )}
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90" />
               
               <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10">

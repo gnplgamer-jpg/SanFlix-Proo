@@ -3,7 +3,7 @@ import { AdMob } from "@capacitor-community/admob";
 import { UnityAds } from "capacitor-unity-ads";
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Info, Play, Star, Tv, Heart, History, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
+import { Info, Play, Clock, Star, Tv, Heart, History, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
 import { TopHeader } from './components/TopHeader';
 import { BottomNav } from './components/BottomNav';
 import { AdminPanel } from './components/AdminPanel';
@@ -13,7 +13,6 @@ import { ProfileHub } from './components/ProfileHub';
 import { Discover } from './components/Discover';
 import { TvShows } from './components/TvShows';
 import { Movies } from './components/Movies';
-import { SubscribeModal } from './components/SubscribeModal';
 import { PlayerModal } from './components/PlayerModal';
 import { DirectVideoPlayer } from './components/DirectVideoPlayer';
 import { ReportModal } from './components/ReportModal';
@@ -23,6 +22,31 @@ import { AuthModal } from './components/AuthModal';
 import { MovieRail } from './components/MovieRail';
 import { ActressRail } from './components/ActressRail';
 import { ChatBot } from './components/ChatBot';
+
+const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
+  const [timeLeft, setTimeLeft] = useState(expiryTime - Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setTimeLeft(expiryTime - Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [expiryTime]);
+
+  if (timeLeft <= 0) return null;
+
+  const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+  const minutes = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((timeLeft % (1000 * 60)) / 1000);
+
+  return (
+    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-red-600/90 backdrop-blur-md px-2 py-1 rounded-md text-xs font-bold text-white shadow-lg border border-red-400/50 flex items-center gap-1 z-20">
+      <Clock className="w-3 h-3 animate-pulse" />
+      {hours}h {minutes}m {seconds}s
+    </div>
+  );
+};
+
 import { TrendingVideos } from './components/TrendingVideos';
 import { UnlockModal } from './components/UnlockModal';
 import { SpinnerPage } from './components/SpinnerPage';
@@ -34,7 +58,7 @@ import { movies as staticMovies } from './data';
 
 const safeLower = (val: any) => String(val || '').toLowerCase();
 
-const defaultStaticCategories = ['All', 'SanFlix-Pro', 'Recent', 'Bhojpuri', 'Romantic', 'Horror', 'Action', 'Thriller', 'Sci-Fi', 'Crime', 'Comedy', 'Anime', 'Old is gold', '🔥 18+ Hub'];
+const defaultStaticCategories = ['All', 'Premium', 'Recent', 'Bhojpuri', 'Romantic', 'Horror', 'Action', 'Thriller', 'Sci-Fi', 'Crime', 'Comedy', 'Anime', 'Old is gold', '🔥 18+ Hub'];
 
 export default function App() {
   useEffect(() => {
@@ -134,7 +158,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isLightMode, setIsLightMode] = useState(false);
   const [user, setUser] = useState<any>(null);
-  const { coins, isUnlocked, unlockMovie, addCoins } = useCoinSystem(user);
+  const { coins, isUnlocked, unlockedContent, unlockMovie, addCoins } = useCoinSystem(user);
 
 
   const [isChatOpen, setIsChatOpen] = useState(false);
@@ -242,10 +266,7 @@ export default function App() {
     nextEpisode?: any;
   } | null>(null);
 
-  const [isSubscribed, setIsSubscribed] = useState(() => localStorage.getItem('SANFLIX_PRO_SUBSCRIBED') === 'true');
-  const [showSubscribePopup, setShowSubscribePopup] = useState(() => !localStorage.getItem('SANFLIX_PRO_SUBSCRIBED'));
-  const [pendingMovieForSubscribe, setPendingMovieForSubscribe] = useState<any>(null);
-
+      
   // Next Video Countdown effect
   const [appError, setAppError] = useState<Error | null>(null);
 
@@ -753,7 +774,7 @@ const handleSelectMovie = (movie: any) => {
     if (selectedCategory && selectedCategory !== '' && selectedCategory !== 'All' && selectedCategory !== 'Recent') {
        if (selectedCategory === '🔥 18+ Hub') {
           result = result.filter(m => m.ad_gate);
-       } else if (selectedCategory === 'SanFlix-Pro') {
+       } else if (selectedCategory === 'Premium') {
           result = result.filter(m => m.is_sanflix_pro);
        } else if (selectedCategory.startsWith('Actress: ')) {
           const actressName = safeLower(selectedCategory.replace('Actress: ', '').trim());
@@ -937,11 +958,9 @@ const handleSelectMovie = (movie: any) => {
                         setShowAuthModal(true);
                         return;
                       }
-                      if (!isSubscribed) {
-                        if (!isUnlocked(movieId)) {
+                      if (!isUnlocked(movieId)) {
                           setUnlockingMovie(latestMovie);
                           return;
-                        }
                       }
                       setGlobalVideo({ 
                         url: fallbackUrl, 
@@ -986,11 +1005,14 @@ const handleSelectMovie = (movie: any) => {
                         >
                           <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50">
                             <img
-                              src={movie.poster_url || movie.imageUrl}
-                              alt={movie.title}
-                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                              loading="lazy"
-                            />
+                         src={movie.poster_url || movie.imageUrl}
+                         alt={movie.title}
+                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                         loading="lazy"
+                       />
+                       {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+                         <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+                       )}
                             <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10">
                               <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400 flex items-center gap-1 border border-white/10">
                                 <Star className="w-3 h-3 fill-yellow-400" />
@@ -1002,8 +1024,11 @@ const handleSelectMovie = (movie: any) => {
                                 </div>
                               )}
                             </div>
-                            <button 
-                              onClick={(e) => toggleMyList(e, movie)}
+                            {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+                         <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+                       )}
+                       <button 
+                         onClick={(e) => toggleMyList(e, movie)}
                               className="absolute top-2 left-2 p-1.5 bg-black/60 backdrop-blur-sm rounded-full border border-white/10 text-white hover:text-red-500 transition-colors"
                             >
                               <Heart className={`w-4 h-4 ${myListIds.includes(movie.id || movie.firebase_id) ? 'fill-red-500 text-red-500' : ''}`} />
@@ -1105,7 +1130,7 @@ const handleSelectMovie = (movie: any) => {
                     {categoriesList.map((catName) => {
                       const isActive = selectedCategory === catName;
                       const is18 = catName === '🔥 18+ Hub';
-                      const isPro = catName === 'SanFlix-Pro';
+                      const isPro = catName === 'Premium';
                       
                       return (
                         <button
@@ -1175,11 +1200,14 @@ const handleSelectMovie = (movie: any) => {
                             >
                               <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50">
                                 <img
-                                  src={movie.poster_url || movie.imageUrl}
-                                  alt={movie.title}
-                                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                                  loading="lazy"
-                                />
+                         src={movie.poster_url || movie.imageUrl}
+                         alt={movie.title}
+                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                         loading="lazy"
+                       />
+                       {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+                         <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+                       )}
                                 <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10">
                                   <div className="bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded text-[10px] font-bold text-yellow-400 flex items-center gap-1 border border-white/10">
                                     <Star className="w-3 h-3 fill-yellow-400" />
@@ -1191,8 +1219,11 @@ const handleSelectMovie = (movie: any) => {
                                     </div>
                                   )}
                                 </div>
-                                <button 
-                                  onClick={(e) => toggleMyList(e, movie)}
+                                {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+                         <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+                       )}
+                       <button 
+                         onClick={(e) => toggleMyList(e, movie)}
                                   className="absolute top-2 left-2 p-1.5 bg-black/60 backdrop-blur-sm rounded-full border border-white/10 text-white hover:text-red-500 transition-colors"
                                 >
                                   <Heart className={`w-4 h-4 ${myListIds.includes(movie.id || movie.firebase_id) ? 'fill-red-500 text-red-500' : ''}`} />
@@ -1344,8 +1375,11 @@ const handleSelectMovie = (movie: any) => {
                               <div className="absolute top-2 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-bold text-red-500 border border-red-500/30">
                                 4K ULTRA
                               </div>
-                              <button 
-                                onClick={(e) => toggleMyList(e, movie)}
+                              {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+                         <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+                       )}
+                       <button 
+                         onClick={(e) => toggleMyList(e, movie)}
                                 className="absolute top-2 right-2 p-1.5 bg-black/60 rounded-full border border-white/10 text-white hover:text-red-500"
                               >
                                 <Heart className={`w-3 h-3 ${myListIds.includes(movie.id || movie.firebase_id) ? 'fill-red-500 text-red-500' : ''}`} />
@@ -1437,12 +1471,10 @@ const handleSelectMovie = (movie: any) => {
                                       setShowAuthModal(true);
                                       return;
                                     }
-                                    if (!isSubscribed) {
-                                      const movieId = movie.id || movie.firebase_id;
-                                      if (!isUnlocked(movieId)) {
-                                        setUnlockingMovie(movie);
-                                        return;
-                                      }
+                                    const movieId = movie.id || movie.firebase_id;
+                                    if (!isUnlocked(movieId)) {
+                                      setUnlockingMovie(movie);
+                                      return;
                                     }
                                     let url = movie.streaming_link_1;
                                     if (!url && movie.episodes && movie.episodes.length > 0) {
@@ -1511,58 +1543,58 @@ const handleSelectMovie = (movie: any) => {
                   </div>
 
                   {/* REQUESTED: Sabse Upar */}
-                  <MovieRail title="Old is Gold" emoji="🥇" movies={oldIsGoldMovies} onSelectMovie={handleSelectMovie} colorClass="border-yellow-600" onSeeAll={() => setSelectedCategory('Old is gold')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="Old is Gold" emoji="🥇" movies={oldIsGoldMovies} onSelectMovie={handleSelectMovie} colorClass="border-yellow-600" onSeeAll={() => setSelectedCategory('Old is gold')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
 
                   {/* PHASE 1: USER ENGAGEMENT & RECENT HUBS */}
-                  <MovieRail title="Recently Added" emoji="🆕" movies={recentlyAdded} onSelectMovie={handleSelectMovie} colorClass="border-blue-500" onSeeAll={() => setSelectedCategory('Action')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Recommended For You" emoji="✨" movies={recommendedForYou} onSelectMovie={handleSelectMovie} colorClass="border-purple-500" onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Popular Movies" emoji="🔥" movies={popularMovies} onSelectMovie={handleSelectMovie} colorClass="border-red-500" onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Latest Trailers" emoji="🎬" movies={trailerContent} onSelectMovie={handleSelectMovie} colorClass="border-sky-500" onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="Recently Added" emoji="🆕" movies={recentlyAdded} onSelectMovie={handleSelectMovie} colorClass="border-blue-500" onSeeAll={() => setSelectedCategory('Action')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Recommended For You" emoji="✨" movies={recommendedForYou} onSelectMovie={handleSelectMovie} colorClass="border-purple-500" onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Popular Movies" emoji="🔥" movies={popularMovies} onSelectMovie={handleSelectMovie} colorClass="border-red-500" onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Latest Trailers" emoji="🎬" movies={trailerContent} onSelectMovie={handleSelectMovie} colorClass="border-sky-500" onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
                   {comingSoonMovies.length > 0 && (
-                    <MovieRail title="Coming Soon" emoji="🗓️" movies={comingSoonMovies} onSelectMovie={handleSelectMovie} colorClass="border-yellow-400" isComingSoon={true} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                    <MovieRail title="Coming Soon" emoji="🗓️" movies={comingSoonMovies} onSelectMovie={handleSelectMovie} colorClass="border-yellow-400" isComingSoon={true} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
                   )}
                   
                   {/* PHASE 2: GLOBAL PLATFORM METRICS */}
-                  <MovieRail title="Top 10 Global Movies" emoji="🌍" movies={topGlobalMovies} onSelectMovie={handleSelectMovie} colorClass="border-yellow-400" isTop10={true} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Top 10 Action Movies" emoji="💥" movies={topAction} onSelectMovie={handleSelectMovie} colorClass="border-orange-500" isTop10={true} onSeeAll={() => setSelectedCategory('Action')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Top 10 Horror Movies" emoji="👻" movies={topHorror} onSelectMovie={handleSelectMovie} colorClass="border-zinc-500" isTop10={true} onSeeAll={() => setSelectedCategory('Horror')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Top 10 Crime Movies" emoji="🕵️" movies={topCrime} onSelectMovie={handleSelectMovie} colorClass="border-red-800" isTop10={true} onSeeAll={() => setSelectedCategory('Crime')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Top 10 Romantic Movies" emoji="💖" movies={topRomantic} onSelectMovie={handleSelectMovie} colorClass="border-pink-500" isTop10={true} onSeeAll={() => setSelectedCategory('Romantic')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Top 10 Comedy Movies" emoji="😂" movies={topComedy} onSelectMovie={handleSelectMovie} colorClass="border-yellow-500" isTop10={true} onSeeAll={() => setSelectedCategory('Comedy')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Top 10 TV Serials" emoji="📺" movies={topSerials} onSelectMovie={handleSelectMovie} colorClass="border-indigo-400" isTop10={true} onSeeAll={() => setSelectedCategory('Serial')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Top 10 TV Shows" emoji="🍿" movies={topShows} onSelectMovie={handleSelectMovie} colorClass="border-sky-400" isTop10={true} onSeeAll={() => setSelectedCategory('Show')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="Top 10 Global Movies" emoji="🌍" movies={topGlobalMovies} onSelectMovie={handleSelectMovie} colorClass="border-yellow-400" isTop10={true} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Top 10 Action Movies" emoji="💥" movies={topAction} onSelectMovie={handleSelectMovie} colorClass="border-orange-500" isTop10={true} onSeeAll={() => setSelectedCategory('Action')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Top 10 Horror Movies" emoji="👻" movies={topHorror} onSelectMovie={handleSelectMovie} colorClass="border-zinc-500" isTop10={true} onSeeAll={() => setSelectedCategory('Horror')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Top 10 Crime Movies" emoji="🕵️" movies={topCrime} onSelectMovie={handleSelectMovie} colorClass="border-red-800" isTop10={true} onSeeAll={() => setSelectedCategory('Crime')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Top 10 Romantic Movies" emoji="💖" movies={topRomantic} onSelectMovie={handleSelectMovie} colorClass="border-pink-500" isTop10={true} onSeeAll={() => setSelectedCategory('Romantic')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Top 10 Comedy Movies" emoji="😂" movies={topComedy} onSelectMovie={handleSelectMovie} colorClass="border-yellow-500" isTop10={true} onSeeAll={() => setSelectedCategory('Comedy')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Top 10 TV Serials" emoji="📺" movies={topSerials} onSelectMovie={handleSelectMovie} colorClass="border-indigo-400" isTop10={true} onSeeAll={() => setSelectedCategory('Serial')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Top 10 TV Shows" emoji="🍿" movies={topShows} onSelectMovie={handleSelectMovie} colorClass="border-sky-400" isTop10={true} onSeeAll={() => setSelectedCategory('Show')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
 
                   {/* PHASE 3: CORE GENRE EXPERIENCES */}
-                  <MovieRail title="Action Hub" emoji="⚔️" movies={actionMovies} onSelectMovie={handleSelectMovie} colorClass="border-orange-500" onSeeAll={() => setSelectedCategory('Action')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Drama Emotions" emoji="🎭" movies={dramaMovies} onSelectMovie={handleSelectMovie} colorClass="border-fuchsia-500" onSeeAll={() => setSelectedCategory('Drama')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Crime Thrillers" emoji="🔪" movies={crimeMovies} onSelectMovie={handleSelectMovie} colorClass="border-red-800" onSeeAll={() => setSelectedCategory('Crime')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Comedy Central" emoji="😂" movies={comedyMovies} onSelectMovie={handleSelectMovie} colorClass="border-yellow-500" onSeeAll={() => setSelectedCategory('Comedy')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="Action Hub" emoji="⚔️" movies={actionMovies} onSelectMovie={handleSelectMovie} colorClass="border-orange-500" onSeeAll={() => setSelectedCategory('Action')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Drama Emotions" emoji="🎭" movies={dramaMovies} onSelectMovie={handleSelectMovie} colorClass="border-fuchsia-500" onSeeAll={() => setSelectedCategory('Drama')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Crime Thrillers" emoji="🔪" movies={crimeMovies} onSelectMovie={handleSelectMovie} colorClass="border-red-800" onSeeAll={() => setSelectedCategory('Crime')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Comedy Central" emoji="😂" movies={comedyMovies} onSelectMovie={handleSelectMovie} colorClass="border-yellow-500" onSeeAll={() => setSelectedCategory('Comedy')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
                   
                   {/* REQUESTED: BETWEEN COMEDY AND ANIME */}
-                  <MovieRail title="Bhojpuri Cinema" emoji="💃" movies={bhojpuriMovies} onSelectMovie={handleSelectMovie} colorClass="border-orange-600" onSeeAll={() => setSelectedCategory('Bhojpuri')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Horror Zone" emoji="🧟" movies={horrorMovies} onSelectMovie={handleSelectMovie} colorClass="border-zinc-500" onSeeAll={() => setSelectedCategory('Horror')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Romantic Nights" emoji="🌹" movies={romanticMovies} onSelectMovie={handleSelectMovie} colorClass="border-pink-500" onSeeAll={() => setSelectedCategory('Romantic')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Indian TV Serials" emoji="📺" movies={indianTvSerials} onSelectMovie={handleSelectMovie} colorClass="border-rose-400" onSeeAll={() => setSelectedCategory('Serial')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="Bhojpuri Cinema" emoji="💃" movies={bhojpuriMovies} onSelectMovie={handleSelectMovie} colorClass="border-orange-600" onSeeAll={() => setSelectedCategory('Bhojpuri')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Horror Zone" emoji="🧟" movies={horrorMovies} onSelectMovie={handleSelectMovie} colorClass="border-zinc-500" onSeeAll={() => setSelectedCategory('Horror')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Romantic Nights" emoji="🌹" movies={romanticMovies} onSelectMovie={handleSelectMovie} colorClass="border-pink-500" onSeeAll={() => setSelectedCategory('Romantic')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Indian TV Serials" emoji="📺" movies={indianTvSerials} onSelectMovie={handleSelectMovie} colorClass="border-rose-400" onSeeAll={() => setSelectedCategory('Serial')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
                   
-                  <MovieRail title="Anime Universe" emoji="🎌" movies={animeContent} onSelectMovie={handleSelectMovie} colorClass="border-emerald-500" onSeeAll={() => setSelectedCategory('Anime')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="Anime Universe" emoji="🎌" movies={animeContent} onSelectMovie={handleSelectMovie} colorClass="border-emerald-500" onSeeAll={() => setSelectedCategory('Anime')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
 
-                  <MovieRail title="Sad Content" emoji="😭" movies={sadContent} onSelectMovie={handleSelectMovie} colorClass="border-slate-500" onSeeAll={() => setSelectedCategory('Sad')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="WWE Action" emoji="🤼" movies={wweContent} onSelectMovie={handleSelectMovie} colorClass="border-orange-500" onSeeAll={() => setSelectedCategory('WWE')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="War Zone" emoji="🎖️" movies={warContent} onSelectMovie={handleSelectMovie} colorClass="border-stone-600" onSeeAll={() => setSelectedCategory('War')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="Sad Content" emoji="😭" movies={sadContent} onSelectMovie={handleSelectMovie} colorClass="border-slate-500" onSeeAll={() => setSelectedCategory('Sad')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="WWE Action" emoji="🤼" movies={wweContent} onSelectMovie={handleSelectMovie} colorClass="border-orange-500" onSeeAll={() => setSelectedCategory('WWE')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="War Zone" emoji="🎖️" movies={warContent} onSelectMovie={handleSelectMovie} colorClass="border-stone-600" onSeeAll={() => setSelectedCategory('War')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
 
-                  <MovieRail title="Sci-Fi Space" emoji="👽" movies={sciFiMovies} onSelectMovie={handleSelectMovie} colorClass="border-cyan-500" onSeeAll={() => setSelectedCategory('Sci-Fi')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Adventure Calling" emoji="🗺️" movies={adventureMovies} onSelectMovie={handleSelectMovie} colorClass="border-green-600" onSeeAll={() => setSelectedCategory('Adventure')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="Sci-Fi Space" emoji="👽" movies={sciFiMovies} onSelectMovie={handleSelectMovie} colorClass="border-cyan-500" onSeeAll={() => setSelectedCategory('Sci-Fi')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Adventure Calling" emoji="🗺️" movies={adventureMovies} onSelectMovie={handleSelectMovie} colorClass="border-green-600" onSeeAll={() => setSelectedCategory('Adventure')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
 
                   {/* PHASE 4: NETWORK SPECIFIC HUBS */}
-                  <MovieRail title="TV Shows Hub" emoji="📺" movies={tvShowsHub} onSelectMovie={handleSelectMovie} colorClass="border-indigo-500" onSeeAll={() => setSelectedCategory('Show')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Anime TV Shows" emoji="✏️" movies={animationShows} onSelectMovie={handleSelectMovie} colorClass="border-purple-400" onSeeAll={() => setSelectedCategory('Anime')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="TV Shows Hub" emoji="📺" movies={tvShowsHub} onSelectMovie={handleSelectMovie} colorClass="border-indigo-500" onSeeAll={() => setSelectedCategory('Show')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Anime TV Shows" emoji="✏️" movies={animationShows} onSelectMovie={handleSelectMovie} colorClass="border-purple-400" onSeeAll={() => setSelectedCategory('Anime')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
 
                   {/* NETWORK RAILS */}
-                  <MovieRail title="Netflix Exclusives" emoji="N" movies={netflixContent} onSelectMovie={handleSelectMovie} colorClass="border-red-600" onSeeAll={() => setSelectedCategory('NETFLIX')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="Prime Video" emoji="P" movies={primeContent} onSelectMovie={handleSelectMovie} colorClass="border-sky-500" onSeeAll={() => setSelectedCategory('PRIME VIDEO')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="AltBalaji Specials" emoji="A" movies={altBalajiContent} onSelectMovie={handleSelectMovie} colorClass="border-orange-500" onSeeAll={() => setSelectedCategory('ALTBALAJI')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="SonyLIV Exclusives" emoji="S" movies={sonyLivContent} onSelectMovie={handleSelectMovie} colorClass="border-indigo-700" onSeeAll={() => setSelectedCategory('SONYLIV')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
-                  <MovieRail title="MX PLAYER Exclusives" emoji="M" movies={mxPlayerContent} onSelectMovie={handleSelectMovie} colorClass="border-blue-600" onSeeAll={() => setSelectedCategory('MX PLAYER')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} />
+                  <MovieRail title="Netflix Exclusives" emoji="N" movies={netflixContent} onSelectMovie={handleSelectMovie} colorClass="border-red-600" onSeeAll={() => setSelectedCategory('NETFLIX')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="Prime Video" emoji="P" movies={primeContent} onSelectMovie={handleSelectMovie} colorClass="border-sky-500" onSeeAll={() => setSelectedCategory('PRIME VIDEO')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="AltBalaji Specials" emoji="A" movies={altBalajiContent} onSelectMovie={handleSelectMovie} colorClass="border-orange-500" onSeeAll={() => setSelectedCategory('ALTBALAJI')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="SonyLIV Exclusives" emoji="S" movies={sonyLivContent} onSelectMovie={handleSelectMovie} colorClass="border-indigo-700" onSeeAll={() => setSelectedCategory('SONYLIV')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
+                  <MovieRail title="MX PLAYER Exclusives" emoji="M" movies={mxPlayerContent} onSelectMovie={handleSelectMovie} colorClass="border-blue-600" onSeeAll={() => setSelectedCategory('MX PLAYER')} onToggleMyList={toggleMyList} myListIds={myListIds} continueWatchingIds={continueWatchingIds} unlockedContent={unlockedContent} />
 
                     </>
                   )}
@@ -1571,7 +1603,7 @@ const handleSelectMovie = (movie: any) => {
             </AnimatePresence>
           </>
         ) : activeTab === 'discover' ? (
-          <Discover content={filteredContent} onSelectMovie={handleSelectMovie} />
+          <Discover content={filteredContent} onSelectMovie={handleSelectMovie} unlockedContent={unlockedContent} />
         ) : activeTab === 'explore' ? (
           <div className="pt-8 pb-32 px-4 min-h-screen">
             <h2 className="text-2xl font-bold text-white mb-6">Explore All Movies & Shows</h2>
@@ -1589,6 +1621,9 @@ const handleSelectMovie = (movie: any) => {
                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                          loading="lazy"
                        />
+                       {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+                         <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+                       )}
                      </div>
                      <h3 className="text-sm font-medium leading-tight line-clamp-1 text-white">{movie.title}</h3>
                    </motion.div>
@@ -1624,6 +1659,12 @@ const handleSelectMovie = (movie: any) => {
                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                          loading="lazy"
                        />
+                       {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+                         <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+                       )}
+                       {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
+                         <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
+                       )}
                        <button 
                          onClick={(e) => toggleMyList(e, movie)}
                          className="absolute top-2 left-2 p-1.5 bg-black/60 backdrop-blur-sm rounded-full border border-white/10 text-white hover:text-red-500 transition-colors z-10"
@@ -1698,27 +1739,7 @@ const handleSelectMovie = (movie: any) => {
       
       <ChatBot isOpen={isChatOpen} onClose={() => setIsChatOpen(false)} availableMovies={moviesList} onSelectMovie={handleSelectMovie} onOpenShop={() => setActiveTab('shop')} />
 
-      <AnimatePresence>
-        {showSubscribePopup && (
-          <SubscribeModal
-            onSubscribe={() => {
-              setIsSubscribed(true);
-              setShowSubscribePopup(false);
-              localStorage.setItem('SANFLIX_PRO_SUBSCRIBED', 'true');
-              if (pendingMovieForSubscribe) {
-                setTimeout(() => {
-                  setSelectedMovie(pendingMovieForSubscribe);
-                  setPendingMovieForSubscribe(null);
-                }, 300);
-              }
-            }}
-            onClose={() => {
-              setShowSubscribePopup(false);
-              setPendingMovieForSubscribe(null);
-            }}
-          />
-        )}
-      </AnimatePresence>
+      
 
       <AnimatePresence>
         {toastMessage && (
@@ -1741,7 +1762,7 @@ const handleSelectMovie = (movie: any) => {
             onClose={() => setSelectedMovie(null)} 
             allContent={filteredContent}
             onSelectMovie={handleSelectMovie}
-            isSubscribed={isSubscribed}
+            
             isUnlocked={isUnlocked(selectedMovie.id || selectedMovie.firebase_id)}
             onRequireUnlock={() => setUnlockingMovie(selectedMovie)}
             onPlayVideo={(url, movie) => {

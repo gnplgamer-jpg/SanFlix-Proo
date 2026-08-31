@@ -16,7 +16,7 @@ export function UnlockModal({ movie, coins, onClose, onUnlock, onGoToSpinner, ex
   const [success, setSuccess] = useState(false);
 
   const handleUnlock = async () => {
-    if (coins < 1) {
+    if (coins < 10) {
       onGoToSpinner();
       return;
     }
@@ -78,8 +78,8 @@ export function UnlockModal({ movie, coins, onClose, onUnlock, onGoToSpinner, ex
             <div className="text-right">
               <p className="text-xs text-zinc-400 mb-1 uppercase tracking-wider font-bold">Unlock Cost</p>
               <div className="flex items-center justify-end gap-1">
-                <span className="text-xl font-bold text-white">1</span>
-                <span className="text-zinc-500 font-medium">Coin</span>
+                <span className="text-xl font-bold text-white">10</span>
+                <span className="text-zinc-500 font-medium">Coins</span>
               </div>
             </div>
           </div>
@@ -87,7 +87,7 @@ export function UnlockModal({ movie, coins, onClose, onUnlock, onGoToSpinner, ex
           <div className="space-y-3 mb-8">
             <div className="flex items-center gap-3 text-sm text-zinc-300">
               <Clock className="w-5 h-5 text-emerald-500" />
-              <p>Full access unlocked for <strong className="text-white">6 Hours</strong></p>
+              <p>Full access unlocked for <strong className="text-white">12 Hours</strong></p>
             </div>
             <div className="flex items-center gap-3 text-sm text-zinc-300">
               <AlertCircle className="w-5 h-5 text-blue-500" />
@@ -120,15 +120,15 @@ export function UnlockModal({ movie, coins, onClose, onUnlock, onGoToSpinner, ex
               onClick={handleUnlock}
               disabled={unlocking}
               className={`w-full font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition ${
-                coins >= 1 
+                coins >= 10 
                   ? 'bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-white shadow-lg shadow-amber-500/25' 
                   : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
               }`}
             >
               {unlocking ? (
                 <span className="animate-pulse">Unlocking...</span>
-              ) : coins >= 1 ? (
-                <>Unlock Now for 1 Coin</>
+              ) : coins >= 10 ? (
+                <>Unlock Now for 10 Coins</>
               ) : (
                 <>Not enough coins. Get more!</>
               )}
