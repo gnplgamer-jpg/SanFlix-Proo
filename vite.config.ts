@@ -16,8 +16,8 @@ export default defineConfig(() => {
           maximumFileSizeToCacheInBytes: 5000000 // 5MB limit
         },
         manifest: {
-          name: 'SanFlix Pro',
-          short_name: 'SanFlix',
+          name: 'SanFlix-Pro',
+          short_name: 'SanFlix-Pro',
           description: 'Premium Movie Streaming',
           theme_color: '#09090b',
           background_color: '#09090b',

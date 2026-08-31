@@ -37,8 +37,7 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
   const [trailerClaimed, setTrailerClaimed] = useState(false);
   
   // Audio Refs
-  const DIRECT_AD_LINK = "https://www.google.com"; // TODO: Replace with Adsterra Direct Link
-  const clickSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'));
+    const clickSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3'));
   const spinSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2073/2073-preview.mp3'));
   const winSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3'));
   const loseSound = useRef(new Audio('https://assets.mixkit.co/active_storage/sfx/3151/3151-preview.mp3'));
@@ -107,9 +106,7 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
 
   const triggerWebAd = (purpose: 'spin' | 'mission' | 'checkin' = 'spin') => {
     setAdPurpose(purpose);
-    if (DIRECT_AD_LINK && DIRECT_AD_LINK.includes("http")) {
-      window.open(DIRECT_AD_LINK, '_blank');
-    }
+    
     setShowAd(true);
     setAdTimer(10); // Show "Verifying Sponsor" screen for 10 seconds
   };
@@ -160,29 +157,7 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
     }
 
     if (Capacitor.isNativePlatform()) {
-      try {
-        setSpinning(true);
-        await AdMob.prepareRewardVideoAd({
-          adId: "ca-app-pub-8551073579787342/1909350132",
-          isTesting: false
-        });
-        
-        AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
-          onReward(15);
-          setDailyCheckInClaimed(true);
-          localStorage.setItem('daily_checkin_' + new Date().toDateString(), 'true');
-        });
-        AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-          setSpinning(false);
-        });
-        AdMob.addListener(RewardAdPluginEvents.FailedToLoad, () => {
-          triggerUnityAd('checkin');
-        });
-        await AdMob.showRewardVideoAd();
-      } catch (error) {
-        console.error("AdMob Error", error);
-        triggerUnityAd('checkin');
-      }
+      triggerUnityAd('checkin');
     } else {
       triggerWebAd('checkin');
     }
@@ -200,29 +175,7 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
     }
 
     if (Capacitor.isNativePlatform()) {
-      try {
-        setSpinning(true);
-        await AdMob.prepareRewardVideoAd({
-          adId: "ca-app-pub-8551073579787342/1909350132",
-          isTesting: false
-        });
-        
-        AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
-          onReward(20);
-          setTrailerClaimed(true);
-          localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true');
-        });
-        AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-          setSpinning(false);
-        });
-        AdMob.addListener(RewardAdPluginEvents.FailedToLoad, () => {
-          triggerUnityAd('mission');
-        });
-        await AdMob.showRewardVideoAd();
-      } catch (error) {
-        console.error("AdMob Error", error);
-        triggerUnityAd('mission');
-      }
+      triggerUnityAd('mission');
     } else {
       triggerWebAd('mission');
     }
@@ -245,27 +198,7 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
     }
     
     if (Capacitor.isNativePlatform()) {
-      try {
-        setSpinning(true);
-        await AdMob.prepareRewardVideoAd({
-          adId: "ca-app-pub-8551073579787342/1909350132",
-          isTesting: false
-        });
-        AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
-          finishSpin();
-        });
-        AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-          setSpinning(false);
-        });
-        AdMob.addListener(RewardAdPluginEvents.FailedToLoad, () => {
-          // If AdMob fails (e.g. not on Play Store), fallback to Unity Ads
-          triggerUnityAd();
-        });
-        await AdMob.showRewardVideoAd();
-      } catch (error) {
-        console.error("AdMob Error", error);
-        triggerUnityAd(); // Fallback
-      }
+      triggerUnityAd('spin');
     } else if (typeof (window as any).AndroidApp !== "undefined" && typeof (window as any).AndroidApp.showRewardedAd === "function") {
        (window as any).AndroidApp.showRewardedAd();
     } else if (typeof (window as any).SanFlixNativeBridge !== "undefined" && typeof (window as any).SanFlixNativeBridge.triggerAdUnlock === "function") {
@@ -493,7 +426,7 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
                       <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-400 to-red-700 tracking-tighter">SF</span>
                    </div>
                 </div>
-                <h2 className="text-4xl font-black text-white mb-3 tracking-tight">SanFlix <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-600">VIP</span></h2>
+                <h2 className="text-4xl font-black text-white mb-3 tracking-tight">SanFlix-Pro <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-600">VIP</span></h2>
                 <p className="text-zinc-400 text-lg mb-10 leading-relaxed max-w-[280px]">
                   Unlock ad-free movies, 4K streaming, and watch without interruptions.
                 </p>

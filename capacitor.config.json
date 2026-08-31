@@ -1,6 +1,6 @@
 {
   "appId": "com.sanflix.app",
-  "appName": "SanFlix",
+  "appName": "SanFlix-Pro",
   "webDir": "dist",
   "bundledWebRuntime": false,
   "plugins": {
