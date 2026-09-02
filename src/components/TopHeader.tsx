@@ -281,15 +281,7 @@ export function TopHeader({ onSearch, isSearchActive, setIsSearchActive, searchQ
 
         <div className="flex items-center gap-3 shrink-0">
           
-          {!isSearchActive && (
-            <button
-              onClick={onGamesClick}
-              className="w-9 h-9 preserve-color rounded-full bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-purple-500/20 hover:scale-105 transition-transform"
-              title="GMS"
-            >
-              <Gamepad2 className="w-4 h-4" />
-            </button>
-          )}
+          
           <button
             onClick={() => setIsSearchActive(!isSearchActive)}
             className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${

@@ -90,7 +90,7 @@ export function TrendingVideos({ appMovies, onSelectMovie, onPlayUrl , unlockedC
           <div className="flex items-center gap-3 mb-6 border-l-4 border-red-600 pl-3">
             <Flame className="w-6 h-6 text-red-500" />
             <h2 className="text-xl font-black text-white tracking-wider">
-              HOT & TRENDING ON SANFLIX
+              LIVE TV CHANNELS
             </h2>
           </div>
           <div className="flex overflow-x-auto gap-4 hide-scrollbar pb-4 px-2">
@@ -153,14 +153,14 @@ export function TrendingVideos({ appMovies, onSelectMovie, onPlayUrl , unlockedC
         <div className="flex items-center gap-3 mb-6 border-l-4 border-red-600 pl-3">
           <TrendingUp className="w-6 h-6 text-red-500" />
           <h2 className="text-xl font-black text-white tracking-wider uppercase">
-            Global Trending Trailers
+            Global Live Events & Trailers
           </h2>
         </div>
 
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-20 text-zinc-500">
             <Loader2 className="w-10 h-10 animate-spin text-red-500 mb-4" />
-            <p>Loading global trending content...</p>
+            <p>Loading live TV channels...</p>
           </div>
         )}
 
@@ -175,7 +175,7 @@ export function TrendingVideos({ appMovies, onSelectMovie, onPlayUrl , unlockedC
         {!isLoading && !error && videos.length === 0 && (
           <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-10 text-center text-zinc-500">
             <TrendingUp className="w-12 h-12 text-zinc-700 mx-auto mb-4 opacity-50" />
-            <p className="font-bold">No trending videos found.</p>
+            <p className="font-bold">No live channels found.</p>
           </div>
         )}
 

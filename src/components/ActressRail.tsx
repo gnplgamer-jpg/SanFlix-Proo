@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'motion/react';
+import { BlurImage } from './BlurImage';
 import { Sparkles, ChevronRight, ChevronLeft, Clock } from 'lucide-react';
 
 interface Actress {
@@ -8,22 +9,22 @@ interface Actress {
   imageUrl?: string;
 }
 
-const predefinedActresses: Actress[] = [
+export const predefinedActresses: Actress[] = [
   { name: 'Aliya Naaz', tmdbId: 3004810, imageUrl: 'https://m.media-amazon.com/images/M/MV5BMjYxZjg0ZjQtMzMyYy00NzlmLThiMTItY2YwM2M0NzgyMjc0XkEyXkFqcGc@._V1_UY256_CR20,0,172,256_AL_.jpg' },
   { name: 'Sneha Paul', tmdbId: 3062325, imageUrl: 'https://image.tmdb.org/t/p/w185/9ynw91mnpUAIlHu71W70LiAPZQZ.jpg' },
-  { name: 'Ayesha Kapoor', tmdbId: 3072213, imageUrl: 'https://image.tmdb.org/t/p/w185/9adzxCqez08MTCvDL97YK8XTOIc.jpg' },
-  { name: 'Mahi Kaur', tmdbId: 3020108, imageUrl: 'https://m.media-amazon.com/images/M/MV5BOGYzNTFlNGMtZjc3NC00ZGE2LTljMTEtNzMxMTRmZjBmMzA2XkEyXkFqcGc@._V1_UY256_CR20,0,172,256_AL_.jpg' },
-  { name: 'Anveshi Jain', tmdbId: 2197825, imageUrl: 'https://image.tmdb.org/t/p/w185/7l2h5QyFc0dloUTlsIOPoSHz1ZM.jpg' },
-  { name: 'Flora Saini', tmdbId: 1618035, imageUrl: 'https://image.tmdb.org/t/p/w185/mimiUPvv1S5L7kjXD79EKnfvSDs.jpg' },
-  { name: 'Priya Gamre', tmdbId: 1386701, imageUrl: 'https://image.tmdb.org/t/p/w185/9hRYLNZ9uATRRvbjeFynuIusYVJ.jpg' },
-  { name: 'Bharti Jha', tmdbId: 3878235, imageUrl: 'https://m.media-amazon.com/images/M/MV5BZWFiYWFmYTktMzFhZC00OTI0LWE1YWMtYjYzMWNiMWMzODg4XkEyXkFqcGc@._V1_UY256_CR21,0,172,256_AL_.jpg' },
-  { name: 'Jinnie Jaaz', tmdbId: 2884240, imageUrl: 'https://m.media-amazon.com/images/M/MV5BNWU0NTZkODYtZjgxNC00NjIzLTkyMzktNzBkYzRiNTZkMWRjXkEyXkFqcGc@._V1_UY256_CR8,0,172,256_AL_.jpg' },
-  { name: 'Hiral Radadiya', tmdbId: 3014138, imageUrl: 'https://m.media-amazon.com/images/M/MV5BMGJlMmQwNTUtOTZiYi00Y2U1LTgzNjQtNTA3MDZiMzk0NDJjXkEyXkFqcGc@._V1_UX172_CR0,0,172,256_AL_.jpg' },
-  { name: 'Rekha Mona Sarkar', tmdbId: 3089679, imageUrl: 'https://image.tmdb.org/t/p/w185/8aQIsJiJXpC1vgu2M01DflknCYB.jpg' },
-  { name: 'Muskan Agarwal', tmdbId: 3514736, imageUrl: 'https://image.tmdb.org/t/p/w185/uCt9jLIa6hLpnmeW22Pj5yT3HXy.jpg' },
-  { name: 'Shyna Khatri', tmdbId: 3881260, imageUrl: 'https://image.tmdb.org/t/p/w185/a2hnnIqbzgoBhQcqBffw72idX6O.jpg' },
-  { name: 'Neha Gupta', tmdbId: 3450982, imageUrl: 'https://image.tmdb.org/t/p/w185/7xQSKykWYrzXGwVPZ8UqdxhdPt9.jpg' },
-  { name: 'Kavita Radheshyam', tmdbId: 1395562, imageUrl: 'https://image.tmdb.org/t/p/w185/yain5ELFgRfH8S5pezHMt5FzZDA.jpg' },
+  { name: 'Disha Patani', tmdbId: 1546398, imageUrl: 'https://image.tmdb.org/t/p/w185/jeFgIW3d3BP6MkfnMlmEGP33Oyq.jpg' },
+  { name: 'Nora Fatehi', tmdbId: 1488785, imageUrl: 'https://image.tmdb.org/t/p/w185/jKvLkySOJFUUnUdE7Zo4oPb9ZzM.jpg' },
+  { name: 'Shraddha Kapoor', tmdbId: 130991, imageUrl: 'https://image.tmdb.org/t/p/w185/tFx6DRETklfkFIUu5Sl5TCN1gD9.jpg' },
+  { name: 'Deepika Padukone', tmdbId: 53975, imageUrl: 'https://image.tmdb.org/t/p/w185/rzvvBQ0r6oiqDdzcsdTRB7jN4Rx.jpg' },
+  { name: 'Mrunal Thakur', tmdbId: 1766034, imageUrl: 'https://image.tmdb.org/t/p/w185/4ITqe6SrpQgwUFU52rkmZNffyrM.jpg' },
+  { name: 'Kiara Advani', tmdbId: 1340978, imageUrl: 'https://image.tmdb.org/t/p/w185/2xmU03a6kTWUvuTPMdofiFLxdAw.jpg' },
+  { name: 'Janhvi Kapoor', tmdbId: 1974970, imageUrl: 'https://image.tmdb.org/t/p/w185/2VqBDc19br9CIitXUFkZ52q7V2o.jpg' },
+  { name: 'Pooja Hegde', tmdbId: 587753, imageUrl: 'https://image.tmdb.org/t/p/w185/t09lf8vem5MRk3KaALcdgehreXg.jpg' },
+  { name: 'Rashmika Mandanna', tmdbId: 1752056, imageUrl: 'https://image.tmdb.org/t/p/w185/wr60ZDcMfYRPU6IM3PrsaOCw5ZV.jpg' },
+  { name: 'Mouni Roy', tmdbId: 1251224, imageUrl: 'https://image.tmdb.org/t/p/w185/bopoygerwuqnt1WaTPULn5izxRQ.jpg' },
+  { name: 'Esha Gupta', tmdbId: 1040950, imageUrl: 'https://image.tmdb.org/t/p/w185/zNvRvv4Ifu1kRMzHecSzD3pn62y.jpg' },
+  { name: 'Tamannaah Bhatia', tmdbId: 85721, imageUrl: 'https://image.tmdb.org/t/p/w185/t4WYoKiFAyO1Rhjv7O03EKmJHp4.jpg' },
+  { name: 'Kriti Sanon', tmdbId: 1285028, imageUrl: 'https://image.tmdb.org/t/p/w185/yYqQBLxsjNw1WXakmbC8WwKoPFs.jpg' },
 ];
 
 
@@ -109,12 +110,7 @@ export function ActressRail({ onSelectActress }: { onSelectActress: (name: strin
             <div className="w-[80px] h-[80px] sm:w-[100px] sm:h-[100px] rounded-full p-[2px] bg-gradient-to-tr from-pink-500 via-red-500 to-yellow-500 shadow-lg">
               <div className="w-full h-full rounded-full overflow-hidden bg-zinc-800 border-2 border-black relative">
                 {actress.imageUrl ? (
-                  <img
-                    src={actress.imageUrl}
-                    alt={actress.name}
-                    className="w-full h-full object-cover"
-                    loading="lazy"
-                  />
+                  <BlurImage src={actress.imageUrl} alt={actress.name} className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-xl font-bold text-zinc-500 bg-zinc-900">
                     {actress.name.charAt(0)}

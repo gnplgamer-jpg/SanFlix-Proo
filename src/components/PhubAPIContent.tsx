@@ -1,3 +1,4 @@
+import { BlurImage } from './BlurImage';
 import React, { useEffect, useState } from 'react';
 import { motion } from 'motion/react';
 import { Star, Play, AlertCircle, Loader2 } from 'lucide-react';
@@ -77,12 +78,7 @@ export function PhubAPIContent({ onPlayUrl }: { onPlayUrl: (url: string, title: 
               className="group cursor-pointer relative shrink-0 w-36 sm:w-40"
             >
               <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-2 shadow-[0_0_15px_rgba(249,115,22,0.15)] border-2 border-orange-500/30 group-hover:border-orange-500 transition-all">
-                <img
-                  src={imgUrl}
-                  alt={title}
-                  className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                  loading="lazy"
-                />
+                <BlurImage src={imgUrl} alt={title} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60" />
                 <div className="absolute top-2 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-bold text-orange-500 border border-orange-500/30">
                   LIVE API

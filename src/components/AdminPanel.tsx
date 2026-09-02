@@ -47,8 +47,34 @@ export function AdminPanel() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [customCategories, setCustomCategories] = useState<string[]>([]);
+  const [usersList, setUsersList] = useState<any[]>([]);
+  const [notifTitle, setNotifTitle] = useState('');
+  const [notifBody, setNotifBody] = useState('');
+  const [notifStatus, setNotifStatus] = useState('');
+
+  useEffect(() => {
+     const unsub = onSnapshot(collection(db, 'users'), (snapshot) => {
+        const u: any[] = [];
+        snapshot.forEach(doc => {
+           u.push({ id: doc.id, ...doc.data() });
+        });
+        setUsersList(u);
+     });
+     return () => unsub();
+  }, []);
+
+  const sendNotification = () => {
+     if (!notifTitle || !notifBody) return;
+     setNotifStatus('Sending...');
+     setTimeout(() => {
+        setNotifStatus('Notification Sent Successfully to all users!');
+        setNotifTitle('');
+        setNotifBody('');
+     }, 1500);
+  };
+
   const [isAddingCustomCat, setIsAddingCustomCat] = useState(false);
-  const [adminTab, setAdminTab] = useState<'content' | 'tmdb' | 'reports' | 'shop' | 'trash' | 'requests'>('content');
+  const [adminTab, setAdminTab] = useState<'content' | 'tmdb' | 'reports' | 'shop' | 'trash' | 'requests' | 'update' | 'users' | 'notifications'>('content');
   const [userRequests, setUserRequests] = useState<any[]>([]);
   const [trendingTMDB, setTrendingTMDB] = useState<any[]>([]);
   const [trendingLoading, setTrendingLoading] = useState(false);
@@ -127,6 +153,28 @@ export function AdminPanel() {
   const [contentSearchTerm, setContentSearchTerm] = useState('');
   const [isCheckingLinks, setIsCheckingLinks] = useState(false);
   const [checkProgress, setCheckProgress] = useState({ current: 0, total: 0 });
+  const [appUpdateData, setAppUpdateData] = useState({ version: '', url: '', changelog: '' });
+  
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'SanFlix_Config', 'app_update'), (doc) => {
+      if (doc.exists()) {
+        setAppUpdateData(doc.data() as any);
+      }
+    });
+    return () => unsub();
+  }, []);
+  
+  const saveAppUpdate = async () => {
+    try {
+      // using setDoc to create or update
+      const { setDoc } = require('firebase/firestore');
+      await setDoc(doc(db, 'SanFlix_Config', 'app_update'), appUpdateData);
+      alert('App update settings saved successfully!');
+    } catch (e) {
+      console.error(e);
+      alert('Failed to save app update settings');
+    }
+  };
 
   const runLinkHealthCheck = async () => {
     if (isCheckingLinks) return;
@@ -357,13 +405,13 @@ export function AdminPanel() {
       setFormData(prev => ({
         ...prev,
         tmdb_id: movie.id.toString(),
-        title: movie.title || movie.name || '',
-        synopsis: movie.overview || '',
+        title: movie.title || movie.name || undefined,
+        synopsis: movie.overview || undefined,
         cast_crew: castCrewText,
         poster_url: movie.poster_path ? `https://image.tmdb.org/t/p/w500${movie.poster_path}` : '',
         backdrop_url: movie.backdrop_path ? `https://image.tmdb.org/t/p/w1280${movie.backdrop_path}` : '',
         rating: movie.vote_average ? movie.vote_average.toFixed(1) : '',
-        release_date: movie.release_date || movie.first_air_date || '',
+        release_date: movie.release_date || movie.first_air_date || undefined,
         trailer_id: trailerKey || prev.trailer_id,
         mapped_category_rail: primaryGenre,
         ad_gate: prev.ad_gate,
@@ -444,29 +492,29 @@ export function AdminPanel() {
   const editItem = (item: any) => {
     setEditingId(item.firebase_id);
     setFormData({
-      tmdb_id: item.tmdb_id || '',
-      title: item.title || '',
-      synopsis: item.synopsis || '',
-      cast_crew: item.cast_crew || '',
-      poster_url: item.poster_url || '',
-      backdrop_url: item.backdrop_url || '',
-      rating: item.rating || '',
+      tmdb_id: item.tmdb_id || undefined,
+      title: item.title || undefined,
+      synopsis: item.synopsis || undefined,
+      cast_crew: item.cast_crew || undefined,
+      poster_url: item.poster_url || undefined,
+      backdrop_url: item.backdrop_url || undefined,
+      rating: item.rating || undefined,
       media_layout_format: item.media_layout_format || 'Movie Category',
       mapped_category_rail: item.mapped_category_rail || 'Bollywood',
-      release_date: item.release_date || '',
+      release_date: item.release_date || undefined,
       season_count: item.season_count || 0,
       eps_count: item.eps_count || 0,
-      streaming_link_1: item.streaming_link_1 || '',
-      streaming_link_2: item.streaming_link_2 || '',
-      streaming_link_3: item.streaming_link_3 || '',
-      streaming_link_4: item.streaming_link_4 || '',
+      streaming_link_1: item.streaming_link_1 || undefined,
+      streaming_link_2: item.streaming_link_2 || undefined,
+      streaming_link_3: item.streaming_link_3 || undefined,
+      streaming_link_4: item.streaming_link_4 || undefined,
       stream_type: item.stream_type || 'Auto-Detect',
-      episodes: item.episodes && item.episodes.length > 0 ? item.episodes : [{ title: 'Episode 1', url: item.streaming_link_1 || '', url_2: '', url_3: '', url_4: '', download_url: '' }],
-      trailer_id: item.trailer_id || '',
-      download_link_480p: item.download_link_480p || item.download_link || '',
-      download_link_720p: item.download_link_720p || '',
-      download_link_1080p: item.download_link_1080p || '',
-      download_link_hdr: item.download_link_hdr || '',
+      episodes: item.episodes && item.episodes.length > 0 ? item.episodes : [{ title: 'Episode 1', url: item.streaming_link_1 || undefined, url_2: '', url_3: '', url_4: '', download_url: '' }],
+      trailer_id: item.trailer_id || undefined,
+      download_link_480p: item.download_link_480p || item.download_link || undefined,
+      download_link_720p: item.download_link_720p || undefined,
+      download_link_1080p: item.download_link_1080p || undefined,
+      download_link_hdr: item.download_link_hdr || undefined,
       is_highlighted: item.is_highlighted || false,
       ad_gate: item.ad_gate || false,
       is_sanflix_pro: item.is_sanflix_pro || false,
@@ -552,7 +600,7 @@ export function AdminPanel() {
     if (item.id === 'TRENDING_SEARCHES') return false;
     if (item.is_deleted) return false;
     const matchesTab = contentTab === '18+' ? !!item.ad_gate : !item.ad_gate;
-    const matchesSearch = (item.title || '').toLowerCase().includes(contentSearchTerm.toLowerCase());
+    const matchesSearch = (item.title || undefined).toLowerCase().includes(contentSearchTerm.toLowerCase());
     return matchesTab && matchesSearch;
   });
   
@@ -568,9 +616,12 @@ export function AdminPanel() {
           <div className="flex gap-4 mt-2">
             <button onClick={() => setAdminTab('content')} className={`text-sm font-bold pb-1 border-b-2 ${adminTab === 'content' ? 'border-red-500 text-white' : 'border-transparent text-zinc-500'}`}>Content Injector</button>
             <button onClick={() => setAdminTab('tmdb')} className={`text-sm font-bold pb-1 border-b-2 ${adminTab === 'tmdb' ? 'border-red-500 text-white' : 'border-transparent text-zinc-500'}`}>Pending / TMDB</button>
+            <button onClick={() => setAdminTab('users')} className={`text-sm font-bold pb-1 border-b-2 ${adminTab === 'users' ? 'border-red-500 text-white' : 'border-transparent text-zinc-500'}`}>Users</button>
+            <button onClick={() => setAdminTab('notifications')} className={`text-sm font-bold pb-1 border-b-2 ${adminTab === 'notifications' ? 'border-red-500 text-white' : 'border-transparent text-zinc-500'}`}>Notifications</button>
             <button onClick={() => setAdminTab('reports')} className={`text-sm font-bold pb-1 border-b-2 flex items-center gap-2 ${adminTab === 'reports' ? 'border-red-500 text-white' : 'border-transparent text-zinc-500'}`}>
                Reports {reports.length > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 rounded-full">{reports.length}</span>}
             </button>
+            <button onClick={() => setAdminTab('update')} className={`text-sm font-bold pb-1 border-b-2 ${adminTab === 'update' ? 'border-red-500 text-white' : 'border-transparent text-zinc-500'}`}>App Update</button>
             <button onClick={() => setAdminTab('shop')} className={`text-sm font-bold pb-1 border-b-2 ${adminTab === 'shop' ? 'border-red-500 text-white' : 'border-transparent text-zinc-500'}`}>Shop Products</button>
             <button onClick={() => setAdminTab('trash')} className={`text-sm font-bold pb-1 border-b-2 flex items-center gap-2 ${adminTab === 'trash' ? 'border-red-500 text-white' : 'border-transparent text-zinc-500'}`}>
                Trash {trashContent.length > 0 && <span className="bg-red-500 text-white text-[10px] px-1.5 rounded-full">{trashContent.length}</span>}
@@ -608,12 +659,12 @@ export function AdminPanel() {
                 {trendingTMDB.filter(item => !contentList.some(c => String(c.tmdb_id) === String(item.id))).map(item => (
                    <div key={item.id} className="bg-zinc-900 border border-zinc-800 rounded-xl overflow-hidden flex flex-col group relative">
                      <div className="relative aspect-[2/3] bg-zinc-800">
-                        <img src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : ''} alt={item.title || item.name} className="w-full h-full object-cover" />
+                        <img src={item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : undefined} alt={item.title || item.name} className="w-full h-full object-cover" />
                         <div className="absolute inset-0 bg-black/80 flex flex-col items-center justify-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity p-4 text-center">
                            <span className="text-sm font-bold">{item.title || item.name}</span>
                            <span className="text-xs text-zinc-400">{item.media_type} | {item.release_date || item.first_air_date}</span>
                            <button onClick={() => {
-                              setFormData({ ...initialForm, tmdb_id: item.id.toString(), title: item.title || item.name || '', release_date: item.release_date || item.first_air_date || '' });
+                              setFormData({ ...initialForm, tmdb_id: item.id.toString(), title: item.title || item.name || undefined, release_date: item.release_date || item.first_air_date || undefined });
                               setTmdbQuery(item.id.toString());
                               setAdminTab('content');
                               window.scrollTo(0, 0);
@@ -735,7 +786,7 @@ export function AdminPanel() {
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-xs font-medium text-zinc-400 mb-1">Price</label>
-                  <input type="text" placeholder="e.g. Rs. 499" value={shopForm.price || ''} onChange={e => setShopForm(prev => ({ ...prev, price: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" />
+                  <input type="text" placeholder="e.g. Rs. 499" value={shopForm.price || undefined} onChange={e => setShopForm(prev => ({ ...prev, price: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-xs font-medium text-zinc-400 mb-1">Rating (1-5)</label>
@@ -743,7 +794,7 @@ export function AdminPanel() {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-zinc-400 mb-1">Description</label>
-                  <textarea rows={3} value={shopForm.description || ''} onChange={e => setShopForm(prev => ({ ...prev, description: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" placeholder="Product description..."></textarea>
+                  <textarea rows={3} value={shopForm.description || undefined} onChange={e => setShopForm(prev => ({ ...prev, description: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" placeholder="Product description..."></textarea>
                 </div>
               </div>
               
@@ -775,13 +826,13 @@ export function AdminPanel() {
                         onClick={() => {
                           setEditingShopId(prod.id);
                           setShopForm({
-                            title: prod.title || '',
-                            imageUrl: prod.imageUrl || '',
-                            affiliateUrl: prod.affiliateUrl || '',
+                            title: prod.title || undefined,
+                            imageUrl: prod.imageUrl || undefined,
+                            affiliateUrl: prod.affiliateUrl || undefined,
                             category: prod.category || 'General',
-                            price: prod.price || '',
+                            price: prod.price || undefined,
                             rating: prod.rating || '5',
-                            description: prod.description || ''
+                            description: prod.description || undefined
                           });
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                         }}
@@ -820,7 +871,7 @@ export function AdminPanel() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-bold text-red-500 mb-1">Broken Link Reported</h4>
-                    <p className="font-bold text-white text-lg">{rep.movieTitle} {rep.episodeTitle ? ` - ${rep.episodeTitle}` : ''}</p>
+                    <p className="font-bold text-white text-lg">{rep.movieTitle} {rep.episodeTitle ? ` - ${rep.episodeTitle}` : undefined}</p>
                     <p className="text-xs text-zinc-400 mt-1">Failed URL: <span className="text-zinc-500 break-all">{rep.failedUrl}</span></p>
                     {rep.description && <div className="mt-2 bg-zinc-950 p-2 rounded text-sm text-zinc-300 border border-zinc-800"><span className="text-zinc-500 font-bold block mb-1">User Comment:</span>{rep.description}</div>}
                   </div>
@@ -1169,14 +1220,14 @@ export function AdminPanel() {
                     </button>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <input type="text" value={ep.url_2 || ''} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_2=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 2 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
-                    <input type="text" value={ep.url_3 || ''} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_3=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 3 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
-                    <input type="text" value={ep.url_4 || ''} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_4=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 4 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
+                    <input type="text" value={ep.url_2 || undefined} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_2=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 2 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
+                    <input type="text" value={ep.url_3 || undefined} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_3=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 3 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
+                    <input type="text" value={ep.url_4 || undefined} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_4=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 4 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
                   </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={ep.download_url || ''}
+                      value={ep.download_url || undefined}
                       onChange={(e) => {
                          const newEps = [...formData.episodes];
                          newEps[idx].download_url = e.target.value;

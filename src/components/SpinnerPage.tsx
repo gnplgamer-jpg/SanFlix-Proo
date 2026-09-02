@@ -1,5 +1,4 @@
 import { Capacitor } from "@capacitor/core";
-import { AdMob, RewardAdPluginEvents } from "@capacitor-community/admob";
 import { UnityAds } from "capacitor-unity-ads";
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -115,25 +114,33 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
     setAdPurpose(purpose);
     try {
       setSpinning(true);
-      await UnityAds.loadRewardedVideo({ placementId: "Rewarded_Android" });
-      const result = await UnityAds.showRewardedVideo();
-      if (result && result.success) {
-        if (purpose === 'spin') { finishSpin(); }
-        else if (purpose === 'checkin') {
-          onReward(15);
-          setDailyCheckInClaimed(true);
-          localStorage.setItem('daily_checkin_' + new Date().toDateString(), 'true');
+      if (Capacitor.isNativePlatform()) {
+        await UnityAds.loadRewardedVideo({ placementId: "Rewarded_Android" });
+        const result = await UnityAds.showRewardedVideo();
+        if (result && result.success) {
+          if (purpose === 'spin') { finishSpin(); }
+          else if (purpose === 'checkin') {
+            onReward(15);
+            setDailyCheckInClaimed(true);
+            localStorage.setItem('daily_checkin_' + new Date().toDateString(), 'true');
+          } else {
+            onReward(20);
+            setTrailerClaimed(true);
+            localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true');
+          }
         } else {
-          onReward(20);
-          setTrailerClaimed(true);
-          localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true');
+          alert("Unity Ads: No ad available right now. Please try again later.");
         }
       } else {
-        triggerWebAd(purpose); // Ultimate fallback
+        triggerWebAd(purpose);
       }
     } catch (e) {
       console.error("UnityAds fallback error", e);
-      triggerWebAd(purpose); // Ultimate fallback
+      if (Capacitor.isNativePlatform()) {
+        alert("Unity Ads: Failed to load ad. Please try again.");
+      } else {
+        triggerWebAd(purpose);
+      }
     } finally {
       setSpinning(false);
     }

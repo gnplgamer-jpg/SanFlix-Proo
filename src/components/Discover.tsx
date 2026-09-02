@@ -1,3 +1,4 @@
+import { BlurImage } from './BlurImage';
 import { TrendingUp, Play, Star, Clock } from 'lucide-react';
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 
@@ -50,7 +51,7 @@ const categoriesDB = [
   }
 ];
 
-const safeLower = (val: any) => String(val || '').toLowerCase();
+const safeLower = (val: any) => String(val || undefined).toLowerCase();
 
 
 const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
@@ -77,7 +78,7 @@ const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
   );
 };
 
-export function Discover({ content = [], onSelectMovie }: { content?: any[], onSelectMovie?: (movie: any) => void }) {
+export function Discover({ content = [], onSelectMovie, unlockedContent = {} }: { content?: any[], onSelectMovie?: (movie: any) => void, unlockedContent?: Record<string, number> }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [activeFilter, setActiveFilter] = useState('All Catalog');
@@ -304,12 +305,7 @@ export function Discover({ content = [], onSelectMovie }: { content?: any[], onS
                         className="group cursor-pointer"
                       >
                         <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50">
-                          <img
-            src={movie.poster_url || movie.imageUrl}
-            alt={movie.title}
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
+                          <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
           {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
             <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
           )}
@@ -338,7 +334,7 @@ export function Discover({ content = [], onSelectMovie }: { content?: any[], onS
                             <div 
                               key={i}
                               onClick={() => loadRelatedContent(item.title)}
-                              className={`h-24 rounded-xl relative overflow-hidden bg-gradient-to-br ${item.bgClass} border border-white/5 p-4 flex flex-col justify-end group cursor-pointer hover:scale-[1.02] transition-transform duration-300 ${item.extraClass || ''}`}
+                              className={`h-24 rounded-xl relative overflow-hidden bg-gradient-to-br ${item.bgClass} border border-white/5 p-4 flex flex-col justify-end group cursor-pointer hover:scale-[1.02] transition-transform duration-300 ${item.extraClass || undefined}`}
                             >
                                 <i className={`fa-solid ${item.icon} absolute top-3 right-3 text-2xl text-white/20 group-hover:text-white/40 transition-colors`}></i>
                                 <h4 className="font-bold text-sm text-white drop-shadow-md z-10 leading-tight">{item.title}</h4>
@@ -363,12 +359,7 @@ export function Discover({ content = [], onSelectMovie }: { content?: any[], onS
                 {displayedVideos.map((video, index) => (
                   <div key={`${video.id || video.firebase_id || 'video'}-${index}`} className="group cursor-pointer flex flex-col" onClick={() => onSelectMovie && onSelectMovie(video)}>
                     <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50 shadow-md">
-                      <img 
-                        src={video.poster_url || video.imageUrl} 
-                        alt={video.title} 
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" 
-                        loading="lazy" 
-                      />
+                      <BlurImage src={video.poster_url || video.imageUrl} alt={video.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10">
                 {video.rating && parseFloat(video.rating) >= 8.5 && (
                    <div className="bg-gradient-to-r from-orange-500 to-amber-500 text-black px-1.5 py-0.5 rounded text-[10px] font-bold shadow-lg flex items-center gap-0.5">

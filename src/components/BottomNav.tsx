@@ -1,4 +1,4 @@
-import { Home, Compass, Film, Tv, Heart, User, Settings, ShoppingBag, TrendingUp } from 'lucide-react';
+import { Home, Compass, Film, Tv, Heart, User, Settings, ShoppingBag, TrendingUp, MonitorPlay } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -8,7 +8,7 @@ interface BottomNavProps {
 export function BottomNav({ activeTab, onChangeTab }: BottomNavProps) {
   const tabs = [
     { icon: Home, label: 'Home', value: 'home' },
-    { icon: TrendingUp, label: 'Trending', value: 'trending' },
+    { icon: MonitorPlay, label: 'Live TV', value: 'trending' },
     { icon: Film, label: 'Explore', value: 'explore' },
     { icon: ShoppingBag, label: 'Shop', value: 'shop' },
     { icon: Heart, label: 'My List', value: 'mylist' },

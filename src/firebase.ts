@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, setLogLevel, where, limit } from "firebase/firestore";
+import { getFirestore, getDoc, collection, addDoc, getDocs, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, setLogLevel, where, limit, setDoc } from "firebase/firestore";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import firebaseAppletConfig from "../firebase-applet-config.json";
 
@@ -19,4 +19,4 @@ setLogLevel('silent'); // Suppress internal polling connection errors within the
 
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
-export { auth, googleProvider, signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, db, collection, addDoc, getDocs, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, where, limit };
+export { auth, getDoc, googleProvider, signInWithPopup, signOut, onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, db, collection, addDoc, getDocs, onSnapshot, query, orderBy, doc, updateDoc, deleteDoc, where, limit, setDoc };

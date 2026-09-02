@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Lock, Shield, Settings, AlertTriangle, Facebook, Youtube, Info, FileText, CheckCircle, Trash2, Smartphone, Download, RefreshCw } from 'lucide-react';
+import { Lock, User, Crown, Shield, Settings, AlertTriangle, Facebook, Youtube, Info, FileText, CheckCircle, Trash2, Smartphone, Download, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 import { InstallPWA } from './InstallPWA';
 
 interface ProfileHubProps {
+  onLogout?: () => void;
+  onLoginClick?: () => void;
   user?: any;
   isAdultEnabled: boolean;
   setIsAdultEnabled: (val: boolean) => void;
@@ -27,11 +29,13 @@ export function ProfileHub({
   batterySaver,
   appLockEnabled,
   setAppLockEnabled,
-  setBatterySaver
+  setBatterySaver,
+  onLogout,
+  onLoginClick
 }: ProfileHubProps) {
   const openInChrome = (e: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>, url: string) => {
     e.preventDefault();
-    const isAndroid = /android/i.test(navigator.userAgent || "");
+    const isAndroid = /android/i.test(navigator.userAgent || undefined);
     if (isAndroid) {
       const intentUrl = url.replace(/^https?:\/\//, "intent://") + "#Intent;scheme=https;package=com.android.chrome;end";
       window.location.href = intentUrl;
@@ -48,7 +52,7 @@ export function ProfileHub({
   const [toggleTarget, setToggleTarget] = useState<'adult' | 'phub' | 'disable_pin'>('adult');
   
   // PIN Logic
-  const [adultPin, setAdultPin] = useState(localStorage.getItem('SANFLIX_ADULT_PIN') || '');
+  const [adultPin, setAdultPin] = useState(localStorage.getItem('SANFLIX_ADULT_PIN') || undefined);
   const [showPinGate, setShowPinGate] = useState(false);
   const [showPinSetup, setShowPinSetup] = useState(false);
   const [pinInput, setPinInput] = useState('');
@@ -57,7 +61,7 @@ export function ProfileHub({
 
   // Legal Popups
   const [activePopup, setActivePopup] = useState<string | null>(null);
-
+  
   // Admin Update Engine
   const [updateForm, setUpdateForm] = useState({
     iconUrl: '',
@@ -302,6 +306,31 @@ export function ProfileHub({
         <div className="bg-zinc-900/80 border border-zinc-800/80 rounded-xl p-4 backdrop-blur-md">
            <h3 className="font-bold text-white mb-4 flex items-center gap-2 border-l-2 border-[#E50914] pl-2">App Settings</h3>
            
+           
+           <div className="flex items-center justify-between mb-4 bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/50">
+             <div className="flex items-center gap-3">
+                <div className={`p-2 rounded-full ${appLockEnabled ? 'bg-[#E50914]/20 text-[#E50914]' : 'bg-zinc-800 text-zinc-400'}`}>
+                   <Lock className="w-5 h-5" />
+                </div>
+                <div>
+                   <p className="text-sm font-bold text-white">App Lock</p>
+                   <p className="text-[10px] text-zinc-400 max-w-[200px]">Require Fingerprint/PIN on open</p>
+                </div>
+             </div>
+             <button
+               onClick={() => {
+                 const newVal = !appLockEnabled;
+                 setAppLockEnabled(newVal);
+                 localStorage.setItem("sanflix_app_lock", String(newVal));
+               }}
+               className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${appLockEnabled ? 'bg-[#E50914]' : 'bg-zinc-700'}`}
+             >
+               <div
+                 className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all shadow-md ${appLockEnabled ? 'left-7' : 'left-1'}`}
+               />
+             </button>
+           </div>
+
            <div className="flex items-center justify-between mb-4 bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/50">
              <div className="flex items-center gap-3">
                 <div className={`p-2 rounded-full ${batterySaver ? 'bg-emerald-500/20 text-emerald-500' : 'bg-zinc-800 text-zinc-400'}`}>
@@ -322,6 +351,7 @@ export function ProfileHub({
              </button>
            </div>
 
+           
            <button 
              id="cache-btn"
              onClick={clearCache}
@@ -619,7 +649,7 @@ export function ProfileHub({
 
       {/* Live Update App Popup Component */}
       <AnimatePresence>
-        {liveUpdate && (
+              {liveUpdate && (
           <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/90 backdrop-blur-md" />
             <motion.div 

@@ -1,3 +1,4 @@
+import { BlurImage } from './BlurImage';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Play, Download, ExternalLink, X, Lock, Zap, Youtube, Star, ShieldAlert, MonitorPlay, Smartphone, Globe, Settings, ArrowLeft, Calendar, Share2, AlertCircle, CheckCircle } from 'lucide-react';
@@ -294,7 +295,7 @@ export function PlayerModal({ movie, onClose, allContent = [], onSelectMovie, on
 
   const handleShare = async () => {
     const movieId = movie.firebase_id || movie.id;
-    const movieTitle = movie.title || '';
+    const movieTitle = movie.title || undefined;
 
     const text = "Watch '" + movieTitle + "' on SANFLIX PRO!\n\nhttps://ais-dev-npfy56f3b2r7xxg3atrdkd-822851301981.asia-east1.run.app/?id=" + movieId;
 
@@ -349,11 +350,7 @@ export function PlayerModal({ movie, onClose, allContent = [], onSelectMovie, on
         <div ref={scrollRef} className="overflow-y-auto hide-scrollbar pb-8">
           {/* Header Image */}
           <div className="relative w-full h-64 sm:h-80 lg:h-96 shrink-0 bg-zinc-900 border-b border-zinc-800">
-            <img 
-              src={movie.backdrop_url || movie.poster_url || movie.imageUrl} 
-              className="w-full h-full object-cover opacity-60" 
-              alt={movie.title}
-            />
+            <BlurImage src={movie.backdrop_url || movie.poster_url || movie.imageUrl} className="w-full h-full object-cover opacity-60" alt={movie.title} />
             <div className="absolute inset-0 bg-gradient-to-t from-[#09090B] via-[#09090B]/60 to-transparent" />
             
             <div className="absolute bottom-0 left-0 right-0 p-6 sm:p-8 flex items-end gap-6">
@@ -652,7 +649,7 @@ export function PlayerModal({ movie, onClose, allContent = [], onSelectMovie, on
                     className="w-28 sm:w-32 md:w-36 lg:w-40 shrink-0 snap-start group flex flex-col"
                   >
                     <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-transparent shadow-[0_4px_10px_rgba(0,0,0,0.5)] transition-all duration-300 group-hover:scale-[1.03] group-hover:border-amber-500/50 group-hover:shadow-[0_0_20px_rgba(245,158,11,0.4)] z-0">
-                      <img src={related.poster_url || related.imageUrl || 'https://via.placeholder.com/300x450'} alt={related.title || 'Movie'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+                      <BlurImage src={related.poster_url || related.imageUrl || 'https://via.placeholder.com/300x450'} alt={related.title || 'Movie'} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                       
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/0 to-black/20 group-hover:via-black/10 transition-colors duration-300" />
                       
@@ -858,10 +855,10 @@ export function PlayerModal({ movie, onClose, allContent = [], onSelectMovie, on
           const payload = {
             movieId: movie?.firebase_id || movie?.id || 'unknown',
             movieTitle: movie?.title || 'Unknown',
-            episodeTitle: reportingData.episodeTitle || '',
+            episodeTitle: reportingData.episodeTitle || undefined,
             episodeIdx: reportingData.episodeIdx !== undefined ? reportingData.episodeIdx : null,
-            failedUrl: reportingData.failedUrl || '',
-            description: description || '',
+            failedUrl: reportingData.failedUrl || undefined,
+            description: description || undefined,
             timestamp: new Date().toISOString(),
             resolved: false
           };

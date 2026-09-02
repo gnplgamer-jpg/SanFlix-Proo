@@ -1,12 +1,11 @@
 import { Capacitor } from "@capacitor/core";
-import { AdMob } from "@capacitor-community/admob";
+import { App as CapApp } from "@capacitor/app";
 import { UnityAds } from "capacitor-unity-ads";
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Info, Play, Clock, Star, Tv, Heart, History, ChevronLeft, ChevronRight, TrendingUp } from 'lucide-react';
+import { Info, Play, Clock, Star, Tv, Heart, History, ChevronLeft, ChevronDown, ChevronRight, TrendingUp, AlertTriangle } from 'lucide-react';
 import { TopHeader } from './components/TopHeader';
 import { GamesHub } from './components/GamesHub';
-import { LudoGame } from './components/LudoGame';
 import { BottomNav } from './components/BottomNav';
 import { AdminPanel } from './components/AdminPanel';
 import { Shop } from './components/Shop';
@@ -21,14 +20,22 @@ import { ReportModal } from './components/ReportModal';
 import { NoticeModal } from './components/NoticeModal';
 import { RequestModal } from './components/RequestModal';
 import { AuthModal } from './components/AuthModal';
+import { SubscriptionModal } from './components/SubscriptionModal';
+import { AdPlayer } from './components/AdPlayer';
 import { MovieRail } from './components/MovieRail';
-import { ActressRail } from './components/ActressRail';
+import { ActressRail, predefinedActresses } from './components/ActressRail';
+import { LiveTvRail } from './components/LiveTvRail';
 import { ChatBot } from './components/ChatBot';
 
 const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
   const [timeLeft, setTimeLeft] = useState(expiryTime - Date.now());
 
   useEffect(() => {
+    if (localStorage.getItem('SANFLIX_BANNED') === 'true') {
+       alert("Your account is permanently banned for cheating.");
+       
+       return;
+    }
     const interval = setInterval(() => {
       setTimeLeft(expiryTime - Date.now());
     }, 1000);
@@ -49,42 +56,35 @@ const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
   );
 };
 
+import { BlurImage } from './components/BlurImage';
 import { TrendingVideos } from './components/TrendingVideos';
+import { LiveTvScreen } from './components/LiveTvScreen';
 import { UnlockModal } from './components/UnlockModal';
 import { SpinnerPage } from './components/SpinnerPage';
 import { BiometricLock } from './components/BiometricLock';
 import { Globe, Settings, X, Sparkles, Bot, ExternalLink } from 'lucide-react';
-import { db, collection, getDocs, onSnapshot, addDoc, query, doc } from './firebase';
+import { db, collection, getDocs, onSnapshot, addDoc, query, doc, auth, onAuthStateChanged, setDoc, getDoc, updateDoc } from './firebase';
 import { useCoinSystem } from './useCoinSystem';
 import { movies as staticMovies } from './data';
 
-const safeLower = (val: any) => String(val || '').toLowerCase();
+const safeLower = (val: any) => String(val || undefined).toLowerCase();
 
 const defaultStaticCategories = ['All', 'Premium', 'Recent', 'Bhojpuri', 'Romantic', 'Horror', 'Action', 'Thriller', 'Sci-Fi', 'Crime', 'Comedy', 'Anime', 'Old is gold', '🔥 18+ Hub'];
 
 export default function App() {
   useEffect(() => {
-    const initAdMob = async () => {
-      if (Capacitor.isNativePlatform()) {
-        try {
-          await AdMob.initialize({
-            testingDevices: [],
-            initializeForTesting: false,
-          });
-        } catch(e) {
-          console.error("AdMob Init Error", e);
+    const initUnityAds = async () => {
+      try {
+        if (Capacitor.isNativePlatform()) {
+          // Initialize Unity Ads
+          // Game ID should be your actual Unity Game ID
+          // await UnityAds.initialize({ gameId: 'YOUR_GAME_ID', testMode: true });
         }
-        try {
-          await UnityAds.initialize({
-            gameId: import.meta.env.VITE_UNITY_GAME_ID || "5687795", // Replace with correct ID if not matching
-            testMode: false
-          });
-        } catch(e) {
-          console.error("UnityAds Init Error", e);
-        }
+      } catch (e) {
+        console.error("UnityAds Init Error", e);
       }
     };
-    initAdMob();
+    initUnityAds();
   }, []);
 
 
@@ -104,14 +104,60 @@ export default function App() {
   const [showPromo, setShowPromo] = useState(false);
   
   useEffect(() => {
-    const savedUser = localStorage.getItem('sanflix_user');
-    if (savedUser) {
-      try {
-        setUser(JSON.parse(savedUser));
-      } catch (e) {
-        console.error(e);
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        const user = {
+          uid: firebaseUser.uid,
+          displayName: firebaseUser.displayName || 'User',
+          email: firebaseUser.email,
+          isGuest: false,
+          photoURL: firebaseUser.photoURL
+        };
+        setUser(user);
+        localStorage.setItem('sanflix_user', JSON.stringify(user));
+        
+        // Fetch user data from firestore
+        try {
+           
+           
+           // Ensure user is in database for admin panel
+           await setDoc(doc(db, 'users', firebaseUser.uid), {
+             uid: firebaseUser.uid,
+             displayName: firebaseUser.displayName || 'User',
+             email: firebaseUser.email,
+             photoURL: firebaseUser.photoURL,
+             lastLogin: new Date().toISOString()
+           }, { merge: true });
+
+           const userDoc = await getDoc(doc(db, 'users', firebaseUser.uid));
+           if (userDoc.exists()) {
+             const data = userDoc.data();
+             if (data.myListIds) {
+               setMyListIds(data.myListIds);
+               localStorage.setItem('SANFLIX_MYLIST', JSON.stringify(data.myListIds));
+             }
+           }
+        } catch(e) {
+           console.error("Failed to fetch user cloud save", e);
+        }
+
+      } else {
+        const savedUser = localStorage.getItem('sanflix_user');
+        if (savedUser) {
+          try {
+             const parsed = JSON.parse(savedUser);
+             if (parsed.isGuest) {
+               setUser(parsed);
+               return;
+             }
+          } catch (e) {
+             console.error(e);
+          }
+        }
+        setUser(null);
       }
-    }
+    });
+    return () => unsubscribe();
   }, []);
 
 
@@ -146,24 +192,49 @@ export default function App() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [isRequestOpen, setIsRequestOpen] = useState(false);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+  const [premiumTrialMode, setPremiumTrialMode] = useState(false);
+  const [isAdPlaying, setIsAdPlaying] = useState(false);
+  const [fraudWarning, setFraudWarning] = useState<{message: string, count: number} | null>(null);
   const [pendingMovie, setPendingMovie] = useState<any | null>(null);
   const [showSpinnerPage, setShowSpinnerPage] = useState(false);
   const [unlockingMovie, setUnlockingMovie] = useState<any | null>(null);
   
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const [searchHistory, setSearchHistory] = useState<string[]>([]);
+  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [trendingSearches, setTrendingSearches] = useState<{ id: string, query: string }[]>([]);
   
   const [selectedMovie, setSelectedMovie] = useState<any | null>(null);
 
 
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>("");
   const [isLightMode, setIsLightMode] = useState(false);
   const [user, setUser] = useState<any>(null);
   const { coins, isUnlocked, unlockedContent, unlockMovie, addCoins } = useCoinSystem(user);
 
 
   const [isChatOpen, setIsChatOpen] = useState(false);
+
+  const CURRENT_APP_VERSION = '1.0.0';
+  const [appUpdateData, setAppUpdateData] = useState<{ version: string; url: string; changelog: string; } | null>(null);
+  
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'SanFlix_Config', 'app_update'), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.data() as any;
+        if (data.version && data.version !== CURRENT_APP_VERSION) {
+          // Check if this version is technically "newer". For now, just inequality is fine, or simple check.
+          if (data.version.trim() !== '') {
+            setAppUpdateData(data);
+          }
+        }
+      }
+    });
+    return () => unsub();
+  }, []);
+
   const [isLoading, setIsLoading] = useState(true);
   const [appLockEnabled, setAppLockEnabled] = useState(() => localStorage.getItem("sanflix_app_lock") === "true");
   const [isAppLocked, setIsAppLocked] = useState(localStorage.getItem("sanflix_app_lock") === "true");
@@ -272,6 +343,111 @@ export default function App() {
   // Next Video Countdown effect
   const [appError, setAppError] = useState<Error | null>(null);
 
+  // --- LAYERED BACK NAVIGATION LOGIC ---
+  const stateRefs = useRef({
+    globalVideo, showAuthModal, showPremiumModal, isAdPlaying, showSpinnerPage, reportingData, isRequestOpen, isChatOpen, selectedMovie, selectedCategory, isSearchActive, activeTab
+  });
+  
+  useEffect(() => {
+    stateRefs.current = {
+      globalVideo, showAuthModal, showPremiumModal, isAdPlaying, showSpinnerPage, reportingData, isRequestOpen, isChatOpen, selectedMovie, selectedCategory, isSearchActive, activeTab
+    };
+  }, [globalVideo, showAuthModal, showSpinnerPage, reportingData, isRequestOpen, isChatOpen, selectedMovie, selectedCategory, isSearchActive, activeTab]);
+
+  useEffect(() => {
+    let lastBackPress = 0;
+    
+    const handleBackButton = () => {
+      const state = stateRefs.current;
+      
+      // Layer 1: Video Player
+      if (state.globalVideo) {
+        setGlobalVideo(null);
+        return;
+      }
+      
+      // Layer 2: Top level Modals
+      
+      if (state.isAdPlaying) return;
+      if (state.showPremiumModal) {
+        setShowPremiumModal(false);
+        return;
+      }
+      if (state.showAuthModal) {
+        setShowAuthModal(false);
+        return;
+      }
+      if (state.showSpinnerPage) {
+        setShowSpinnerPage(false);
+        return;
+      }
+      if (state.reportingData) {
+        setReportingData(null);
+        return;
+      }
+      if (state.isRequestOpen) {
+        setIsRequestOpen(false);
+        return;
+      }
+      if (state.isChatOpen) {
+        setIsChatOpen(false);
+        return;
+      }
+      
+      // Layer 3: Movie Details
+      if (state.selectedMovie) {
+        setSelectedMovie(null);
+        return;
+      }
+      
+      // Layer 4: Category View
+      if (state.selectedCategory) {
+        setSelectedCategory(null);
+        return;
+      }
+      
+      // Layer 5: Search
+      if (state.isSearchActive) {
+        setIsSearchActive(false);
+        return;
+      }
+      
+      // Layer 6: Tabs -> return to home
+      if (state.activeTab !== 'home') {
+        setActiveTab('home');
+        return;
+      }
+      
+      // Layer 7: Exit App logic (double tap)
+      const now = Date.now();
+      if (now - lastBackPress < 2000) {
+        CapApp.exitApp();
+      } else {
+        lastBackPress = now;
+        setToastMessage("Press back again to exit");
+      }
+    };
+    
+    CapApp.addListener('backButton', handleBackButton);
+    
+    // Also handle web browser back button
+    const handleWebBack = (e: PopStateEvent) => {
+      handleBackButton();
+      // Push state back so we can trap it again
+      window.history.pushState(null, '', window.location.href);
+    };
+    
+    window.history.pushState(null, '', window.location.href);
+    window.addEventListener('popstate', handleWebBack);
+    
+    return () => {
+      CapApp.removeAllListeners();
+      window.removeEventListener('popstate', handleWebBack);
+    };
+  }, []);
+  // ------------------------------------
+
+
   if (appError) {
     throw appError;
   }
@@ -349,8 +525,8 @@ export default function App() {
             const feedJson = await feedRes.json();
             const entries = feedJson.feed?.entry || [];
             for (const entry of entries) {
-              const title = entry.title?.$t || '';
-              const content = entry.content?.$t || '';
+              const title = entry.title?.$t || undefined;
+              const content = entry.content?.$t || undefined;
               const versionMatch = title.match(/v\\d+\\.\\d+\\.\\d+/i) || content.match(/v\\d+\\.\\d+\\.\\d+/i);
               if (versionMatch) {
                 versionData = {
@@ -425,7 +601,7 @@ const handleSelectMovie = (movie: any) => {
     localStorage.setItem('SANFLIX_CW', JSON.stringify(newCW));
   };
 
-  const toggleMyList = (e: React.MouseEvent, movie: any) => {
+  const toggleMyList = async (e: React.MouseEvent, movie: any) => {
     e.stopPropagation();
     if (!user) {
       setShowAuthModal(true);
@@ -440,6 +616,24 @@ const handleSelectMovie = (movie: any) => {
     }
     setMyListIds(newML);
     localStorage.setItem('SANFLIX_MYLIST', JSON.stringify(newML));
+    
+    // Sync to Firestore if not guest
+    if (user && !user.isGuest) {
+       try {
+         await updateDoc(doc(db, 'users', user.uid), { myListIds: newML });
+       } catch (err: any) {
+         if (err.code === 'not-found') {
+             try {
+                
+                await setDoc(doc(db, 'users', user.uid), { myListIds: newML }, { merge: true });
+             } catch (e) {
+                console.error("Failed to create user doc for myList", e);
+             }
+         } else {
+             console.error("Failed to sync myList to Firestore", err);
+         }
+       }
+    }
   };
 
   const handleSearchCommit = (query: string) => {
@@ -587,10 +781,22 @@ const handleSelectMovie = (movie: any) => {
       cats = Array.from(new Set(cats.filter(Boolean)));
       return { ...m, mapped_category_rail: cats.join(', ') };
     });
-  }, [isAdultEnabled, moviesList]);
 
-  const urlHandledRef = useRef(false);
-  useEffect(() => {
+    if (selectedLanguage && selectedLanguage !== 'All Languages') {
+       const lang = selectedLanguage.toLowerCase();
+       list = list.filter(m => {
+         const inLang = safeLower(m.language).includes(lang);
+         const inUrls = Array.isArray(m.language_urls) && m.language_urls.some((l) => safeLower(l.language).includes(lang));
+         const inCat = safeLower(m.mapped_category_rail).includes(lang);
+         return inLang || inUrls || inCat;
+       });
+    }
+
+    return list;
+  }, [isAdultEnabled, isPHubEnabled, moviesList, selectedLanguage]);
+
+  const urlHandledRef = React.useRef(false);
+  React.useEffect(() => {
     if (filteredContent.length > 0 && !urlHandledRef.current) {
       urlHandledRef.current = true;
       const searchParams = new URLSearchParams(window.location.search);
@@ -604,51 +810,24 @@ const handleSelectMovie = (movie: any) => {
     }
   }, [filteredContent]);
 
-  // Derived content
-  const highlightedMovies = useMemo(() => {
+  const highlightedMovies = React.useMemo(() => {
     const list = filteredContent.filter(m => m.is_highlighted);
     if (list.length > 0) return list;
-    
-    // Fallback to top popular movies if no explicitly highlighted movies exist
     return [...filteredContent]
       .filter(m => safeLower(m.media_layout_format).includes('movie'))
       .sort((a, b) => (parseFloat(b.rating || '0') - parseFloat(a.rating || '0')))
       .slice(0, 5);
   }, [filteredContent]);
 
-  const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
-
-  useEffect(() => {
-    if (highlightedMovies.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentSlideIndex(prev => (prev + 1) % highlightedMovies.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [highlightedMovies.length]);
-
-  const currentSpotlight = highlightedMovies[currentSlideIndex];
-
-  // Derived Rails Data
-  const recentlyAdded = useMemo(() => [...filteredContent].slice(0, 15), [filteredContent]);
-  
-  const recommendedForYou = useMemo(() => {
+  const recentlyAdded = React.useMemo(() => [...filteredContent].slice(0, 15), [filteredContent]);
+  const forYouMovies = React.useMemo(() => {
     return filteredContent.filter(m => m.is_highlighted || (parseFloat(m.rating as string) >= 8.0)).sort(() => Math.random() - 0.5).slice(0, 15);
   }, [filteredContent]);
-  
-  const trailerContent = useMemo(() => filteredContent.filter(m => String(m.trailer_id || '').trim() !== ''), [filteredContent]);
 
-  const comingSoonMovies = useMemo(() => {
-    const now = new Date();
-    // Normalize today to start of day for comparison
-    now.setHours(0, 0, 0, 0);
-    
+  const trailerContent = React.useMemo(() => filteredContent.filter(m => String(m.trailer_id || undefined).trim() !== ''), [filteredContent]);
+  const upcomingMovies = React.useMemo(() => {
     return filteredContent.filter(m => {
-      const hasNoStreamingLink = !m.streaming_link_1 && (!m.episodes || m.episodes.length === 0 || !m.episodes[0].url);
-      if (hasNoStreamingLink) return true;
-
-      if (!m.release_date) return false;
-      const releaseDate = new Date(m.release_date);
-      return releaseDate > now;
+       return m.mapped_category_rail && String(m.mapped_category_rail).toLowerCase().includes('upcoming');
     }).sort((a, b) => {
       const dateA = a.release_date ? new Date(a.release_date).getTime() : 0;
       const dateB = b.release_date ? new Date(b.release_date).getTime() : 0;
@@ -656,128 +835,110 @@ const handleSelectMovie = (movie: any) => {
     });
   }, [filteredContent]);
 
-  // Generators for categories
-
-  const sanFlixProContent = useMemo(() => {
+  const sanFlixProContent = React.useMemo(() => {
     return filteredContent.filter(m => m.is_sanflix_pro);
   }, [filteredContent]);
 
-  const phubLiveContent = useMemo(() => {
+  const phubLiveContent = React.useMemo(() => {
     return filteredContent.filter(m => m.is_phub_live);
   }, [filteredContent]);
 
-  const phubContent = useMemo(() => {
+  const phubContent = React.useMemo(() => {
     return filteredContent.filter(m => !m.is_phub_live && m.mapped_category_rail && String(m.mapped_category_rail).includes('Porn Hub'));
   }, [filteredContent]);
 
-  const standardContent = useMemo(() => {
+  const standardContent = React.useMemo(() => {
     return filteredContent.filter(m => !m.is_sanflix_pro && !m.ad_gate && !(m.mapped_category_rail && String(m.mapped_category_rail).includes('Porn Hub')));
   }, [filteredContent]);
 
-  const oldIsGoldMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('old is gold')), [standardContent]);
-  const actionMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('action')), [standardContent]);
-  const horrorMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('horror')), [standardContent]);
-  const crimeMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('crime')), [standardContent]);
-  const romanticMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('romant') || safeLower(m.mapped_category_rail).includes('romance')), [standardContent]);
-  const comedyMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('comed')), [standardContent]);
-  const dramaMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('drama')), [standardContent]);
-  const adventureMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('adventure')), [standardContent]);
-  const bhojpuriMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('bhojpuri')), [standardContent]);
-  
-  const sadContent = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('sad')), [standardContent]);
-  const wweContent = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('wwe')), [standardContent]);
-  const warContent = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('war')), [standardContent]);
-  
-  const tvShowsHub = useMemo(() => standardContent.filter(m => safeLower(m.media_layout_format).includes('show') || safeLower(m.mapped_category_rail).includes('show')), [standardContent]);
-  const serialsNetwork = useMemo(() => standardContent.filter(m => safeLower(m.media_layout_format).includes('series') || safeLower(m.mapped_category_rail).includes('serial')), [standardContent]);
-  const indianTvSerials = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('serial') || safeLower(m.mapped_category_rail).includes('indian tv')), [standardContent]);
-  
-  const animeContent = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('anime') || safeLower(m.mapped_category_rail).includes('animation')), [standardContent]);
-  const sciFiMovies = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('sci-fi') || safeLower(m.mapped_category_rail).includes('scifi')), [standardContent]);
-  const animationShows = useMemo(() => standardContent.filter(m => (safeLower(m.mapped_category_rail).includes('anime') || safeLower(m.mapped_category_rail).includes('animation')) && (safeLower(m.media_layout_format).includes('show') || safeLower(m.media_layout_format).includes('series'))), [standardContent]);
+  const oldIsGoldMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('old is gold')), [standardContent]);
+  const actionMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('action')), [standardContent]);
+  const horrorMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('horror')), [standardContent]);
+  const crimeMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('crime')), [standardContent]);
+  const romanticMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('romant') || safeLower(m.mapped_category_rail).includes('romance')), [standardContent]);
+  const comedyMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('comed')), [standardContent]);
+  const dramaMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('drama')), [standardContent]);
+  const adventureMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('adventure')), [standardContent]);
+  const bhojpuriMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('bhojpuri')), [standardContent]);
+  const sadContent = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('sad')), [standardContent]);
+  const wweContent = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('wwe')), [standardContent]);
+  const warContent = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('war')), [standardContent]);
+  const tvShowsHub = React.useMemo(() => standardContent.filter(m => safeLower(m.media_layout_format).includes('show') || safeLower(m.mapped_category_rail).includes('show')), [standardContent]);
+  const serialsNetwork = React.useMemo(() => standardContent.filter(m => safeLower(m.media_layout_format).includes('series') || safeLower(m.mapped_category_rail).includes('serial')), [standardContent]);
+  const indianTvSerials = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('serial') || safeLower(m.mapped_category_rail).includes('indian tv')), [standardContent]);
+  const animeContent = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('anime') || safeLower(m.mapped_category_rail).includes('animation')), [standardContent]);
+  const sciFiMovies = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('sci-fi') || safeLower(m.mapped_category_rail).includes('scifi')), [standardContent]);
+  const animationShows = React.useMemo(() => standardContent.filter(m => (safeLower(m.mapped_category_rail).includes('anime') || safeLower(m.mapped_category_rail).includes('animation')) && (safeLower(m.media_layout_format).includes('show') || safeLower(m.media_layout_format).includes('series'))), [standardContent]);
+  const netflixContent = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('netflix')), [standardContent]);
+  const primeContent = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('prime')), [standardContent]);
+  const altBalajiContent = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('altbalaji')), [standardContent]);
+  const sonyLivContent = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('sonyliv')), [standardContent]);
+  const mxPlayerContent = React.useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('mx player')), [standardContent]);
 
-  // Network Content
-  const netflixContent = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('netflix')), [standardContent]);
-  const primeContent = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('prime')), [standardContent]);
-  const altBalajiContent = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('altbalaji')), [standardContent]);
-  const sonyLivContent = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('sonyliv')), [standardContent]);
-  const mxPlayerContent = useMemo(() => standardContent.filter(m => safeLower(m.mapped_category_rail).includes('mx player')), [standardContent]);
+  const sortByRating = (arr: any[]) => arr.sort((a, b) => (parseFloat(b.rating || '0') - parseFloat(a.rating || '0')));
+  const popularMovies = React.useMemo(() => sortByRating(standardContent.filter(m => safeLower(m.media_layout_format).includes('movie'))).slice(0, 20), [standardContent]);
+  const topGlobalMovies = React.useMemo(() => sortByRating(standardContent.filter(m => safeLower(m.media_layout_format).includes('movie'))).slice(0, 10), [standardContent]);
 
-  // TOP 10 Metrics
-  const sortByRating = (arr: any[]) => [...arr].sort((a, b) => (parseFloat(b.rating || '0') - parseFloat(a.rating || '0')));
-  
-  const popularMovies = useMemo(() => sortByRating(standardContent.filter(m => safeLower(m.media_layout_format).includes('movie'))).slice(0, 20), [standardContent]);
-  const topGlobalMovies = useMemo(() => sortByRating(standardContent.filter(m => safeLower(m.media_layout_format).includes('movie'))).slice(0, 10), [standardContent]);
-  const topAction = useMemo(() => sortByRating(actionMovies).slice(0, 10), [actionMovies]);
-  const topHorror = useMemo(() => sortByRating(horrorMovies).slice(0, 10), [horrorMovies]);
-  const topCrime = useMemo(() => sortByRating(crimeMovies).slice(0, 10), [crimeMovies]);
-  const topRomantic = useMemo(() => sortByRating(romanticMovies).slice(0, 10), [romanticMovies]);
-  const topComedy = useMemo(() => sortByRating(comedyMovies).slice(0, 10), [comedyMovies]);
-  const topSerials = useMemo(() => sortByRating(serialsNetwork).slice(0, 10), [serialsNetwork]);
-  const topShows = useMemo(() => sortByRating(tvShowsHub).slice(0, 10), [tvShowsHub]);
+  const networks = [
+    { id: 'netflix', name: 'NETFLIX', label: 'NETFLIX', colorClass: 'from-red-600 to-red-900 border-red-500/50', initial: 'N', textClass: 'text-white' },
+    { id: 'prime', name: 'PRIME VIDEO', label: 'PRIME VIDEO', colorClass: 'from-blue-600 to-cyan-900 border-blue-500/50', initial: 'P', textClass: 'text-white' },
+    { id: 'altbalaji', name: 'ALTBALAJI', label: 'ALTBALAJI', colorClass: 'from-orange-600 to-red-900 border-orange-500/50', initial: 'A', textClass: 'text-white' },
+    { id: 'sonyliv', name: 'SONYLIV', label: 'SONYLIV', colorClass: 'from-yellow-500 to-yellow-800 border-yellow-500/50', initial: 'S', textClass: 'text-black' },
+    { id: 'mxplayer', name: 'MX PLAYER', label: 'MX PLAYER', colorClass: 'from-blue-800 to-blue-950 border-blue-800/50', initial: 'M', textClass: 'text-white' }
+  ];
 
-  const continueWatchingMovies = useMemo(() => {
+  const currentSpotlight = highlightedMovies[currentSlideIndex] || null;
+  const continueWatchingMovies = React.useMemo(() => continueWatchingIds.map(id => filteredContent.find(m => m.id === id || m.firebase_id === id)).filter(Boolean), [continueWatchingIds, filteredContent]);
+  const myListMovies = React.useMemo(() => myListIds.map(id => filteredContent.find(m => m.id === id || m.firebase_id === id)).filter(Boolean), [myListIds, filteredContent]);
+  const recommendedForYou = React.useMemo(() => filteredContent.filter(m => m.is_highlighted || (parseFloat(m.rating || '0') >= 8.0)).sort(() => Math.random() - 0.5).slice(0, 15), [filteredContent]);
+  const comingSoonMovies = React.useMemo(() => filteredContent.filter(m => m.mapped_category_rail && String(m.mapped_category_rail).toLowerCase().includes('upcoming')).sort((a,b) => (new Date(a.release_date||0).getTime() - new Date(b.release_date||0).getTime())), [filteredContent]);
+
+  const topAction = React.useMemo(() => sortByRating(actionMovies).slice(0, 10), [actionMovies]);
+  const topHorror = React.useMemo(() => sortByRating(horrorMovies).slice(0, 10), [horrorMovies]);
+  const topCrime = React.useMemo(() => sortByRating(crimeMovies).slice(0, 10), [crimeMovies]);
+  const topRomantic = React.useMemo(() => sortByRating(romanticMovies).slice(0, 10), [romanticMovies]);
+  const topComedy = React.useMemo(() => sortByRating(comedyMovies).slice(0, 10), [comedyMovies]);
+  const topSerials = React.useMemo(() => sortByRating(indianTvSerials).slice(0, 10), [indianTvSerials]);
+  const topShows = React.useMemo(() => sortByRating(tvShowsHub).slice(0, 10), [tvShowsHub]);
+
+  const continueWatchingList = React.useMemo(() => {
     return continueWatchingIds
       .map(id => filteredContent.find(m => m.id === id || m.firebase_id === id))
       .filter(Boolean);
   }, [continueWatchingIds, filteredContent]);
 
-  const myListMovies = useMemo(() => {
+  const myListContent = React.useMemo(() => {
     return myListIds
       .map(id => filteredContent.find(m => m.id === id || m.firebase_id === id))
       .filter(Boolean);
   }, [myListIds, filteredContent]);
 
-  const defaultNetworks = [
-    { id: 'n1', name: 'NETFLIX', colorClass: 'from-red-600 to-red-900 border-red-500/30', textClass: 'text-red-50 font-black tracking-[0.2em] uppercase text-xl drop-shadow-md', label: 'NETFLIX', initial: 'N' },
-    { id: 'n2', name: 'PRIME VIDEO', colorClass: 'from-cyan-500 to-blue-700 border-blue-400/30', textClass: 'text-blue-50 font-extrabold tracking-wide text-lg', label: 'prime video', initial: 'P' },
-    { id: 'n3', name: 'ALTBALAJI', colorClass: 'from-orange-500 to-red-600 border-orange-400/30', textClass: 'text-orange-50 font-bold tracking-tight text-lg', label: 'ALTBalaji', initial: 'A' },
-    { id: 'n4', name: 'SONYLIV', colorClass: 'from-indigo-600 to-purple-800 border-indigo-400/30', textClass: 'text-indigo-50 font-black tracking-tighter text-lg', label: 'SonyLIV', initial: 'S' },
-    { id: 'n5', name: 'MX PLAYER', colorClass: 'from-blue-600 to-blue-900 border-blue-500/30', textClass: 'text-blue-50 font-black tracking-normal text-lg', label: 'MX PLAYER', initial: 'M' },
-  ];
-  const adultNetworks = [
-    { id: 'v1', name: 'ULLU VIP', colorClass: 'from-pink-500 to-rose-700 border-pink-400/30', textClass: 'text-pink-50 font-black tracking-wider text-lg', label: 'ULLU VIP', initial: 'U' },
-    { id: 'v2', name: 'KOOKU', colorClass: 'from-purple-600 to-fuchsia-800 border-purple-400/30', textClass: 'text-purple-50 font-bold tracking-widest text-lg', label: 'KOOKU', initial: 'K' },
-    { id: 'v3', name: 'PRIMESHOTS', colorClass: 'from-rose-500 to-red-700 border-rose-400/30', textClass: 'text-rose-50 font-extrabold italic text-lg', label: 'PRIMESHOTS', initial: 'P' },
-  ];
-  const networks = isAdultEnabled ? [...adultNetworks, ...defaultNetworks] : defaultNetworks;
-
-  const categoriesList = useMemo(() => {
-    const dynamicCats = new Set<string>();
+  const categoriesList = React.useMemo(() => {
+    const cats = new Set<string>();
     filteredContent.forEach(m => {
-      const cats = String(m.mapped_category_rail || '').split(',').map(c => c.trim()).filter(Boolean);
-      cats.forEach(c => dynamicCats.add(c));
+       if (m.mapped_category_rail) {
+         String(m.mapped_category_rail).split(',').forEach(c => cats.add(c.trim()));
+       }
     });
-    const all = Array.from(new Set([...defaultStaticCategories, ...Array.from(dynamicCats)]));
-    
-    let result = all;
-    
-    if (!isPHubEnabled) {
-      result = result.filter(c => typeof c === 'string' && !c.includes('Porn Hub'));
-    }
-    
-    if (!isAdultEnabled) {
-      result = result.filter(c => typeof c === 'string' && !c.includes('18+ Hub') && !c.includes('ULLU') && !c.includes('KOOKU') && !c.includes('PRIMESHOTS'));
-    }
-    
-    return result;
+    const dynamicCats = Array.from(cats).filter(c => c && !defaultStaticCategories.includes(c));
+    return [...defaultStaticCategories, ...dynamicCats, 'Actress: Sunny Leone', 'Actress: Mia Khalifa', 'Actress: Dani Daniels', 'Actress: Kendra Lust', 'Actress: Angela White'];
   }, [filteredContent, isAdultEnabled, isPHubEnabled]);
 
-  const searchResults = useMemo(() => {
+  const searchResults = React.useMemo(() => {
     let result = filteredContent;
     
     if (searchQuery.trim()) {
       const queryStr = searchQuery.toLowerCase();
       result = result.filter(
-        (m) => safeLower(m.title).includes(queryStr) || safeLower(m.mapped_category_rail).includes(queryStr)
+        (m) => safeLower(m.title).includes(queryStr) || safeLower(m.mapped_category_rail).includes(queryStr) || safeLower(m.cast_crew).includes(queryStr)
       );
     }
     
-    if (selectedCategory && selectedCategory !== '' && selectedCategory !== 'All' && selectedCategory !== 'Recent') {
-       if (selectedCategory === '🔥 18+ Hub') {
-          result = result.filter(m => m.ad_gate);
-       } else if (selectedCategory === 'Premium') {
+    if (selectedCategory && selectedCategory !== 'All') {
+       if (selectedCategory === 'Premium') {
           result = result.filter(m => m.is_sanflix_pro);
+       } else if (selectedCategory === 'Recent') {
+          result = result.sort((a,b) => (new Date(b.release_date||0).getTime() - new Date(a.release_date||0).getTime()));
        } else if (selectedCategory.startsWith('Actress: ')) {
           const actressName = safeLower(selectedCategory.replace('Actress: ', '').trim());
           result = result.filter(m => safeLower(m.cast_crew).includes(actressName) || safeLower(m.title).includes(actressName));
@@ -908,7 +1069,7 @@ const handleSelectMovie = (movie: any) => {
               </button>
               
               <div className="relative aspect-square">
-                <img src={promoProduct.imageUrl || 'https://via.placeholder.com/400'} alt={promoProduct.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+                <BlurImage src={promoProduct.imageUrl || 'https://via.placeholder.com/400'} alt={promoProduct.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
                 <div className="absolute top-2 left-2 bg-red-600 text-white text-[10px] font-bold px-2 py-1 rounded shadow-lg uppercase tracking-wider animate-pulse">Special Offer</div>
               </div>
               <div className="p-4 bg-gradient-to-t from-zinc-900 via-zinc-900 to-transparent">
@@ -1007,12 +1168,7 @@ const handleSelectMovie = (movie: any) => {
                           onClick={() => handleSelectMovie(movie)}
                         >
                           <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50">
-                            <img
-                         src={movie.poster_url || movie.imageUrl}
-                         alt={movie.title}
-                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                         loading="lazy"
-                       />
+                            <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                        {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
                          <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
                        )}
@@ -1116,7 +1272,7 @@ const handleSelectMovie = (movie: any) => {
                               className="group cursor-pointer flex items-center gap-3 bg-zinc-900/50 hover:bg-zinc-800 rounded-lg p-2 transition-colors border border-zinc-800 hover:border-zinc-700"
                            >
                              <div className="w-12 h-16 bg-zinc-800 rounded shrink-0 overflow-hidden relative">
-                               <img src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover" />
+                               <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover" />
                              </div>
                              <div className="flex-1 min-w-0">
                                 <h4 className="text-xs font-medium text-zinc-200 line-clamp-2 leading-snug">{movie.title}</h4>
@@ -1128,6 +1284,26 @@ const handleSelectMovie = (movie: any) => {
                     </motion.div>
                   )}
 
+                  {/* Stylish Language & Category Filters */}
+                  <div className="px-4 mb-4 flex flex-col gap-3">
+                    {/* Language Pills */}
+                    <div className="flex items-center gap-2 overflow-x-auto hide-scrollbar pb-1">
+                      <span className="text-xs font-bold text-zinc-500 uppercase tracking-widest shrink-0 mr-1">Language:</span>
+                      {['All Languages', 'Hindi', 'English', 'Bhojpuri', 'Tamil', 'Telugu'].map(lang => (
+                        <button
+                          key={lang}
+                          onClick={() => setSelectedLanguage(lang === 'All Languages' ? '' : lang)}
+                          className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-bold transition-all border shrink-0 ${
+                            (selectedLanguage === lang || (!selectedLanguage && lang === 'All Languages'))
+                              ? 'bg-red-600 text-white border-red-500 shadow-[0_2px_10px_rgba(220,38,38,0.3)]'
+                              : 'bg-zinc-900 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:border-zinc-600'
+                          }`}
+                        >
+                          {lang}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                   {/* Category Chips Scroll */}
                   <div className="flex overflow-x-auto gap-3 hide-scrollbar px-4">
                     {categoriesList.map((catName) => {
@@ -1163,8 +1339,20 @@ const handleSelectMovie = (movie: any) => {
                           <button onClick={() => setSelectedCategory(null)} className="absolute top-4 left-4 p-2 bg-black/40 backdrop-blur-md rounded-full hover:bg-white/20 transition-colors z-10">
                             <ChevronLeft className="w-6 h-6 text-white" />
                           </button>
+                          
                           <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-red-500 shadow-[0_0_30px_rgba(239,68,68,0.3)] shrink-0 bg-zinc-900 flex items-center justify-center">
-                            <span className="text-4xl font-black text-zinc-700">{selectedCategory.replace('Actress: ', '').charAt(0)}</span>
+                            {(() => {
+                              const actressName = selectedCategory.replace('Actress: ', '');
+                              const actressInfo = predefinedActresses.find(a => a.name === actressName);
+                              if (actressInfo?.imageUrl) {
+                                return (
+                                  <BlurImage src={actressInfo.imageUrl} alt={actressName} className="w-full h-full object-cover" />
+                                );
+                              }
+                              return (
+                                <span className="text-4xl font-black text-zinc-700">{actressName.charAt(0)}</span>
+                              );
+                            })()}
                           </div>
                           <div className="flex flex-col items-center sm:items-start text-center sm:text-left pt-2">
                             <span className="text-red-400 font-bold tracking-widest uppercase text-xs sm:text-sm mb-1">Spotlight</span>
@@ -1202,12 +1390,7 @@ const handleSelectMovie = (movie: any) => {
                               onClick={() => handleSelectMovie(movie)}
                             >
                               <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50">
-                                <img
-                         src={movie.poster_url || movie.imageUrl}
-                         alt={movie.title}
-                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                         loading="lazy"
-                       />
+                                <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                        {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
                          <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
                        )}
@@ -1281,12 +1464,7 @@ const handleSelectMovie = (movie: any) => {
                             className="relative aspect-[4/3] rounded-[24px] overflow-hidden border border-zinc-800 shadow-xl group cursor-pointer bg-zinc-800/50" 
                             onClick={() => handleSelectMovie(currentSpotlight)}
                           >
-                            <img
-                              src={currentSpotlight.backdrop_url || currentSpotlight.imageUrl}
-                              alt={currentSpotlight.title}
-                              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none"
-                              loading="lazy"
-                            />
+                            <BlurImage src={currentSpotlight.backdrop_url || currentSpotlight.imageUrl} alt={currentSpotlight.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none" />
                             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent pointer-events-none" />
                             
                             <div className="absolute bottom-0 left-0 right-0 p-5 flex flex-col gap-2 pointer-events-none">
@@ -1348,6 +1526,12 @@ const handleSelectMovie = (movie: any) => {
                   )}
 
 
+                  {/* Live TV Trending Rail */}
+                  <LiveTvRail onSelectChannel={(channel) => { 
+                    localStorage.setItem('pendingLiveChannel', JSON.stringify(channel)); 
+                    setActiveTab('trending'); 
+                  }} />
+
                   {/* Actresses Rail */}
                   <ActressRail onSelectActress={(name) => setSelectedCategory('Actress: ' + name)} />
                   
@@ -1368,12 +1552,7 @@ const handleSelectMovie = (movie: any) => {
                             className="group cursor-pointer relative shrink-0 w-36 sm:w-40"
                           >
                             <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-2 shadow-lg shadow-black/50 border-2 border-red-500/20 group-hover:border-red-500 transition-colors">
-                              <img
-                                src={movie.poster_url || movie.imageUrl}
-                                alt={movie.title}
-                                className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                                loading="lazy"
-                              />
+                              <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
                               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60" />
                               <div className="absolute top-2 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-bold text-red-500 border border-red-500/30">
                                 4K ULTRA
@@ -1411,12 +1590,7 @@ const handleSelectMovie = (movie: any) => {
                             className="group cursor-pointer relative shrink-0 w-36 sm:w-40"
                           >
                             <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-2 shadow-[0_0_15px_rgba(249,115,22,0.15)] border-2 border-orange-500/30 group-hover:border-orange-500 transition-all">
-                              <img
-                                src={movie.poster_url || movie.imageUrl}
-                                alt={movie.title}
-                                className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                                loading="lazy"
-                              />
+                              <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
                               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60" />
                               <div className="absolute top-2 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-bold text-orange-500 border border-orange-500/30">
                                 LIVE
@@ -1449,12 +1623,7 @@ const handleSelectMovie = (movie: any) => {
                             className="group cursor-pointer relative shrink-0 w-36 sm:w-40"
                           >
                             <div className="relative aspect-[3/4] rounded-2xl overflow-hidden mb-2 shadow-[0_0_15px_rgba(249,115,22,0.15)] border-2 border-orange-500/30 group-hover:border-orange-500 group-hover:shadow-[0_0_20px_rgba(249,115,22,0.4)] transition-all">
-                              <img
-                                src={movie.poster_url || movie.imageUrl}
-                                alt={movie.title}
-                                className="w-full h-full object-cover group-hover:opacity-80 transition-opacity"
-                                loading="lazy"
-                              />
+                              <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover group-hover:opacity-80 transition-opacity" />
                               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60" />
                               <div className="absolute top-2 left-2 bg-black/60 px-1.5 py-0.5 rounded text-[10px] font-bold text-orange-500 border border-orange-500/30">
                                 PREMIUM
@@ -1609,8 +1778,6 @@ const handleSelectMovie = (movie: any) => {
           <Discover content={filteredContent} onSelectMovie={handleSelectMovie} unlockedContent={unlockedContent} />
         ) : activeTab === 'games' ? (
           <GamesHub onSelectGame={(id) => setActiveTab(id)} />
-        ) : activeTab === 'ludo' ? (
-          <LudoGame onBack={() => setActiveTab('games')} onGameEnd={() => setActiveTab('games')} />
         ) : activeTab === 'explore' ? (
           <div className="pt-8 pb-32 px-4 min-h-screen">
             <h2 className="text-2xl font-bold text-white mb-6">Explore All Movies & Shows</h2>
@@ -1622,12 +1789,7 @@ const handleSelectMovie = (movie: any) => {
                      onClick={() => handleSelectMovie(movie)}
                    >
                      <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50">
-                       <img
-                         src={movie.poster_url || movie.imageUrl}
-                         alt={movie.title}
-                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                         loading="lazy"
-                       />
+                       <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                        {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
                          <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
                        )}
@@ -1660,12 +1822,7 @@ const handleSelectMovie = (movie: any) => {
                      onClick={() => handleSelectMovie(movie)}
                    >
                      <div className="relative aspect-[2/3] rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50 shadow-lg">
-                       <img
-                         src={movie.poster_url || movie.imageUrl}
-                         alt={movie.title}
-                         className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                         loading="lazy"
-                       />
+                       <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                        {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
                          <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
                        )}
@@ -1695,6 +1852,14 @@ const handleSelectMovie = (movie: any) => {
           </div>
         ) : activeTab === 'profile' ? (
           <ProfileHub
+            user={user}
+            onLogout={() => {
+              auth.signOut();
+              localStorage.removeItem('sanflix_user');
+              localStorage.removeItem('sanflix_guest_id');
+              setUser(null);
+            }}
+            onLoginClick={() => setShowAuthModal(true)}
             isAdultEnabled={isAdultEnabled}
             setIsAdultEnabled={setIsAdultEnabled}
             isAdminUnlocked={isAdminUnlocked}
@@ -1706,19 +1871,12 @@ const handleSelectMovie = (movie: any) => {
             setBatterySaver={setBatterySaver}
           />
         ) : activeTab === 'trending' ? (
-          <TrendingVideos 
-            appMovies={filteredContent} 
-            onSelectMovie={handleSelectMovie}
-            onPlayUrl={(url, title, movie) => {
-              setGlobalVideo({
-                url,
-                movie: movie || { title } as any,
-                showLanguageSelector: false,
-                showQualitySelector: false,
-                showEpisodeSelector: false,
-                fallbackUrls: []
-              });
-            }}
+          <LiveTvScreen 
+            user={user}
+            onRequirePremium={(expired) => {
+               setPremiumTrialMode(expired);
+               setShowPremiumModal(true);
+            }} 
           />
         ) : activeTab === 'admin' && isAdminUnlocked ? (
           <AdminPanel />
@@ -1790,12 +1948,57 @@ const handleSelectMovie = (movie: any) => {
         )}
       </AnimatePresence>
 
+      
+      {/* App Update Popup */}
+      <AnimatePresence>
+        {appUpdateData && (
+          <div className="fixed inset-0 z-[10000] bg-black/90 flex flex-col items-center justify-center p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-zinc-900 border border-zinc-700 rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center"
+            >
+              <div className="w-20 h-20 bg-gradient-to-br from-red-600 to-red-900 rounded-full mx-auto flex items-center justify-center mb-6 shadow-lg shadow-red-500/30">
+                <Globe className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-3xl font-black text-white mb-2">Update Available!</h2>
+              <p className="text-zinc-400 font-medium mb-2">Version {appUpdateData.version} is here</p>
+              
+              <div className="bg-zinc-950 rounded-xl p-4 mb-6 text-left border border-zinc-800 h-32 overflow-y-auto">
+                <h4 className="text-sm font-bold text-red-500 mb-2 uppercase tracking-wider">What's New:</h4>
+                <p className="text-zinc-300 text-sm whitespace-pre-line">{appUpdateData.changelog}</p>
+              </div>
+
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={() => window.location.href = appUpdateData.url}
+                  className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-red-600/30 transition-all active:scale-95"
+                >
+                  Update Now
+                </button>
+                <button 
+                  onClick={() => setAppUpdateData(null)}
+                  className="w-full bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-bold py-3 rounded-xl transition-all"
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       {/* Global Video Player Overlay (Persists for PiP) */}
       <AnimatePresence>
         {globalVideo && (
             <>
               <DirectVideoPlayer
-                url={globalVideo.url}
+            isPremium={user?.isPremium || localStorage.getItem('SANFLIX_PREMIUM') === 'true'}
+            onRequirePremium={() => {
+               setGlobalVideo(null);
+               setShowPremiumModal(true);
+            }}
+            url={globalVideo.url}
                 title={globalVideo.movie?.title || 'Unknown'}
                 initialTime={globalVideo.initialTime}
                 onClose={() => {
@@ -2041,9 +2244,93 @@ const handleSelectMovie = (movie: any) => {
             </>
         )}
       </AnimatePresence>
-      <NoticeModal />
+      <NoticeModal />\n
+      {/* Fraud Warning Modal */}
+      <AnimatePresence>
+        {fraudWarning && (
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-red-950/80 backdrop-blur-xl" />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 50 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 50 }}
+              className="relative w-full max-w-md bg-gradient-to-b from-black to-red-950 border-2 border-red-600 rounded-3xl p-8 shadow-[0_0_80px_rgba(220,38,38,0.4)] text-center overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-10"></div>
+              
+              <div className="w-24 h-24 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500 shadow-[0_0_30px_rgba(220,38,38,0.5)]">
+                 <AlertTriangle className="w-12 h-12 text-red-500 animate-pulse" />
+              </div>
+              
+              <h2 className="text-3xl font-black text-white mb-2 uppercase tracking-widest text-red-500 drop-shadow-[0_0_10px_rgba(220,38,38,0.8)]">
+                Admin Warning!
+              </h2>
+              
+              <p className="text-red-200 text-lg mb-8 font-medium whitespace-pre-wrap">
+                {fraudWarning.message}
+              </p>
+              
+              {fraudWarning.count < 3 && (
+                <button 
+                  onClick={() => setFraudWarning(null)}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.5)] transition-colors uppercase tracking-widest"
+                >
+                  I Understand
+                </button>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <RequestModal isOpen={isRequestOpen} onClose={() => setIsRequestOpen(false)} />
       <AnimatePresence>
+        
+        {showPremiumModal && (
+          <SubscriptionModal 
+            trialMode={premiumTrialMode}
+            onClose={() => setShowPremiumModal(false)}
+            onSubscribe={(plan) => {
+              const premiumUser = { ...user, isPremium: true };
+              setUser(premiumUser);
+              localStorage.setItem('sanflix_user', JSON.stringify(premiumUser));
+              setShowPremiumModal(false);
+              localStorage.setItem('SANFLIX_PREMIUM', 'true');
+            }}
+            onWatchAdTrial={() => {
+               setShowPremiumModal(false);
+               setIsAdPlaying(true);
+            }}
+            onFraudWarning={(msg) => {
+               const warnings = parseInt(localStorage.getItem('SANFLIX_WARNINGS') || '0') + 1;
+               localStorage.setItem('SANFLIX_WARNINGS', warnings.toString());
+               
+               if (warnings >= 3) {
+                  // Permanent Ban
+                  setFraudWarning({ message: "3rd WARNING: You have been permanently banned for attempting to cheat the Admin.", count: 3 });
+                  auth.signOut();
+                  auth.currentUser?.delete().catch(e => console.log("Failed to delete from Auth", e));
+                  localStorage.removeItem('sanflix_user');
+                  localStorage.setItem('SANFLIX_BANNED', 'true');
+                  setUser(null);
+                  setTimeout(() => {
+                     window.location.reload();
+                  }, 5000);
+               } else {
+                  setFraudWarning({ message: msg + `\n\nWarning ${warnings}/3`, count: warnings });
+               }
+            }}
+          />
+        )}
+        {isAdPlaying && (
+          <AdPlayer 
+            onAdComplete={() => {
+               setIsAdPlaying(false);
+               const newExpiry = Date.now() + (10 * 60 * 1000); // 10 minutes
+               localStorage.setItem('SANFLIX_LIVE_TRIAL_EXPIRY', newExpiry.toString());
+            }}
+          />
+        )}
         {showAuthModal && (
           <AuthModal 
             onClose={() => {
@@ -2101,12 +2388,12 @@ const handleSelectMovie = (movie: any) => {
         onSubmit={async (description) => {
           if (!reportingData) return;
           const payload = {
-            movieId: reportingData.movieId || '',
-            movieTitle: reportingData.movieTitle || '',
-            episodeTitle: reportingData.episodeTitle || '',
+            movieId: reportingData.movieId || undefined,
+            movieTitle: reportingData.movieTitle || undefined,
+            episodeTitle: reportingData.episodeTitle || undefined,
             episodeIdx: reportingData.episodeIdx !== undefined ? reportingData.episodeIdx : null,
-            failedUrl: reportingData.failedUrl || '',
-            description: description || '',
+            failedUrl: reportingData.failedUrl || undefined,
+            description: description || undefined,
             timestamp: new Date().toISOString(),
             resolved: false
           };

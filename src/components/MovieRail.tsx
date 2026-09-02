@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BlurImage } from './BlurImage';
 import { Play, Star, ChevronRight, Heart, Calendar, Clock, ArrowRight, TrendingUp } from 'lucide-react';
 
 
@@ -23,40 +24,6 @@ const CountdownTimer = ({ expiryTime }: { expiryTime: number }) => {
       <Clock className="w-3 h-3 animate-pulse" />
       {hours}h {minutes}m {seconds}s
     </div>
-  );
-};
-
-const LazyImage = ({ src, alt, className }: { src: string; alt: string; className?: string }) => {
-  const [shouldLoad, setShouldLoad] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
-  const imgRef = useRef<HTMLImageElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (entries[0].isIntersecting) {
-          setShouldLoad(true);
-          observer.disconnect();
-        }
-      },
-      { threshold: 0.01, rootMargin: '200px' }
-    );
-
-    if (imgRef.current) {
-      observer.observe(imgRef.current);
-    }
-
-    return () => observer.disconnect();
-  }, []);
-
-  return (
-    <img
-      ref={imgRef}
-      src={shouldLoad ? src : 'data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='}
-      alt={alt}
-      className={`${className || ''} ${isLoaded ? 'opacity-100' : 'opacity-0'} transition-all duration-500`}
-      onLoad={() => { if (shouldLoad) setIsLoaded(true); }}
-    />
   );
 };
 
@@ -138,7 +105,7 @@ export function MovieRail({ title, emoji, movies, onSelectMovie, colorClass = "b
               </div>
             )}
             <div className={`relative ${isTop10 ? 'h-52 ml-6' : 'h-48'} rounded-xl overflow-hidden mb-2 border border-zinc-800 bg-zinc-800/50 shadow-lg z-0`}>
-              <LazyImage
+              <BlurImage
                 src={movie.poster_url || movie.imageUrl}
                 alt={movie.title}
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"

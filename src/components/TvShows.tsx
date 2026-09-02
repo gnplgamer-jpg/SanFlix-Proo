@@ -1,3 +1,5 @@
+import { BlurImage } from './BlurImage';
+import React from 'react';
 import { Star, Play, TrendingUp, Clock } from 'lucide-react';
 
 interface TvShowsProps {
@@ -50,12 +52,7 @@ export function TvShows({ tvShows, onSelect , unlockedContent = {}}: TvShowsProp
               className="relative aspect-[2/3] rounded-xl overflow-hidden border border-zinc-800 bg-zinc-800/50 shadow-xl group cursor-pointer"
               onClick={() => onSelect(show)}
             >
-              <img
-                src={show.poster_url || show.imageUrl}
-                alt={show.title}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                loading="lazy"
-              />
+              <BlurImage src={show.poster_url || show.imageUrl} alt={show.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-90" />
               
               <div className="absolute top-2 right-2 flex flex-col gap-1 items-end z-10">

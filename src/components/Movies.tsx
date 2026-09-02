@@ -1,3 +1,5 @@
+import { BlurImage } from './BlurImage';
+import React from 'react';
 import { Star, Play, TrendingUp, Clock } from 'lucide-react';
 
 interface MoviesProps {
@@ -50,12 +52,7 @@ export function Movies({ movies, onSelect , unlockedContent = {}}: MoviesProps) 
               className="relative aspect-[2/3] rounded-xl overflow-hidden border border-zinc-800 bg-zinc-800/50 shadow-xl group cursor-pointer"
               onClick={() => onSelect(movie)}
             >
-              <img
-            src={movie.poster_url || movie.imageUrl}
-            alt={movie.title}
-            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
-          />
+              <BlurImage src={movie.poster_url || movie.imageUrl} alt={movie.title} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
           {unlockedContent[movie.id || movie.firebase_id] && unlockedContent[movie.id || movie.firebase_id] > Date.now() && (
             <CountdownTimer expiryTime={unlockedContent[movie.id || movie.firebase_id]} />
           )}
