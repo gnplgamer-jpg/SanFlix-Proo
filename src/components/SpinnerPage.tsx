@@ -130,7 +130,7 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
             localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true');
           }
         } else {
-          alert("Unity Ads: No ad available right now. Please try again later.");
+          console.warn("Unity Ads no ad available, falling back to simulated ad."); triggerWebAd(purpose);
         }
       } else {
         triggerWebAd(purpose);
@@ -138,7 +138,7 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
     } catch (e) {
       console.error("UnityAds fallback error", e);
       if (Capacitor.isNativePlatform()) {
-        alert("Unity Ads: Failed to load ad. Please try again.");
+        console.warn("Unity Ads native load failed, falling back to simulated ad for testing."); triggerWebAd(purpose);
       } else {
         triggerWebAd(purpose);
       }

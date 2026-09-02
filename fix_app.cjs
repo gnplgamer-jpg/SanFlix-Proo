@@ -1,22 +1,19 @@
 const fs = require('fs');
-let code = fs.readFileSync('src/App.tsx', 'utf-8');
+let code = fs.readFileSync('src/App.tsx', 'utf8');
 
-// fix touchStartX
-code = code.replace(
-  /e\.currentTarget\.dataset\.touchStartX = touch\.clientX;/g,
-  "e.currentTarget.dataset.touchStartX = touch.clientX.toString();"
-);
+// import AD_CONFIG
+if (!code.includes("import { AD_CONFIG }")) {
+  code = code.replace(
+    'import { UnityAds } from "capacitor-unity-ads";',
+    'import { UnityAds } from "capacitor-unity-ads";\nimport { AD_CONFIG } from "./config/ads";'
+  );
+}
 
+// update UnityAds initialization
 code = code.replace(
-  /e\.currentTarget\.dataset\.touchStartY = touch\.clientY;/g,
-  "e.currentTarget.dataset.touchStartY = touch.clientY.toString();"
-);
-
-// fix initialTime
-code = code.replace(
-  /fallbackUrls\?: string\[\];/g,
-  "fallbackUrls?: string[];\n    initialTime?: number;"
+  /\/\/ await UnityAds\.initialize\(\{ gameId: 'YOUR_GAME_ID', testMode: true \}\);/,
+  'await UnityAds.initialize({ gameId: AD_CONFIG.unity.gameId, testMode: false });'
 );
 
 fs.writeFileSync('src/App.tsx', code);
-console.log("Fixed App.tsx");
+console.log('App.tsx updated');

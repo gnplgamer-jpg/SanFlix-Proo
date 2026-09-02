@@ -1,6 +1,8 @@
 import { Capacitor } from "@capacitor/core";
 import { App as CapApp } from "@capacitor/app";
 import { UnityAds } from "capacitor-unity-ads";
+import { AdMob } from "@capacitor-community/admob";
+import { AD_CONFIG } from "./config/ads";
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Info, Play, Clock, Star, Tv, Heart, History, ChevronLeft, ChevronDown, ChevronRight, TrendingUp, AlertTriangle } from 'lucide-react';
@@ -76,9 +78,16 @@ export default function App() {
     const initUnityAds = async () => {
       try {
         if (Capacitor.isNativePlatform()) {
+          // Initialize AdMob
+          await AdMob.initialize({
+            
+            testingDevices: [],
+            initializeForTesting: false,
+          });
+
           // Initialize Unity Ads
           // Game ID should be your actual Unity Game ID
-          // await UnityAds.initialize({ gameId: 'YOUR_GAME_ID', testMode: true });
+          await UnityAds.initialize({ gameId: AD_CONFIG.unity.gameId, testMode: false });
         }
       } catch (e) {
         console.error("UnityAds Init Error", e);
