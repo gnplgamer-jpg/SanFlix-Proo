@@ -132,19 +132,40 @@ export function DirectVideoPlayer({
     { name: 'Cinematic', css: 'contrast(1.2) saturate(0.8) sepia(0.2)', isPro: true, img: 'https://images.unsplash.com/photo-1536440136628-849c177e76a1' }
   ];
 
-  const handleApplyFilter = async (filter: any) => {
+    const handleApplyFilter = async (filter: any) => {
     if (filter.isPro && !proUnlockEndTime) {
       setUnlockingFilter(filter.name);
       try {
         if ((window as any).Capacitor?.isNativePlatform()) {
+          const { AdMob, RewardAdPluginEvents } = require('@capacitor-community/admob');
           const { UnityAds } = require('capacitor-unity-ads');
-          await UnityAds.loadRewardedVideo({ placementId: "Rewarded_Android" });
-          const result = await UnityAds.showRewardedVideo();
-          if (result && result.success) {
-             setProUnlockEndTime(Date.now() + 2 * 60 * 1000); // 2 minutes
-             setVisualEnhancer(filter.name);
-          } else {
-             alert('Ad failed to load. Please try again.');
+          const { AD_CONFIG } = require('../config/ads');
+
+          try {
+            // Try AdMob first
+            AdMob.addListener(RewardAdPluginEvents.Rewarded, (rewardItem) => {
+              setProUnlockEndTime(Date.now() + 2 * 60 * 1000); // 2 minutes
+              setVisualEnhancer(filter.name);
+            });
+            await AdMob.prepareRewardVideoAd({ adId: AD_CONFIG.admob.rewarded, isTesting: false });
+            await AdMob.showRewardVideoAd();
+          } catch(admobErr) {
+            console.error("AdMob Rewarded Error", admobErr);
+            try {
+              // Fallback to UnityAds
+              await UnityAds.loadRewardedVideo({ placementId: "Rewarded_Android" });
+              const result = await UnityAds.showRewardedVideo();
+              if (result && result.success) {
+                 setProUnlockEndTime(Date.now() + 2 * 60 * 1000); // 2 minutes
+                 setVisualEnhancer(filter.name);
+              } else {
+                 alert('Ad failed to load. Please try again.');
+              }
+            } catch(unityErr) {
+               console.error("UnityAds fallback error", unityErr);
+               setProUnlockEndTime(Date.now() + 2 * 60 * 1000);
+               setVisualEnhancer(filter.name);
+            }
           }
         } else {
           // Web fallback

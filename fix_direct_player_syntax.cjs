@@ -1,7 +1,10 @@
 const fs = require('fs');
 let code = fs.readFileSync('src/components/DirectVideoPlayer.tsx', 'utf8');
 
-const filterAdCode = `
+const correctCode = `  const handleApplyFilter = async (filter: any) => {
+    if (filter.isPro && !proUnlockEndTime) {
+      setUnlockingFilter(filter.name);
+      try {
         if ((window as any).Capacitor?.isNativePlatform()) {
           const { AdMob, RewardAdPluginEvents } = require('@capacitor-community/admob');
           const { UnityAds } = require('capacitor-unity-ads');
@@ -34,12 +37,28 @@ const filterAdCode = `
             }
           }
         } else {
-`;
+          // Web fallback
+          setTimeout(() => {
+            setProUnlockEndTime(Date.now() + 2 * 60 * 1000); // 2 minutes
+            setVisualEnhancer(filter.name);
+            setUnlockingFilter(null);
+          }, 1500);
+          return;
+        }
+      } catch (e) {
+         console.error(e);
+         // Auto unlock on error for fallback
+         setProUnlockEndTime(Date.now() + 2 * 60 * 1000);
+         setVisualEnhancer(filter.name);
+      }
+      setUnlockingFilter(null);
+    } else {
+      setVisualEnhancer(filter.name);
+    }
+  };`;
 
-code = code.replace(
-  /if \(\(window as any\)\.Capacitor\?\.isNativePlatform\(\)\) \{[\s\S]*?\} else \{/,
-  filterAdCode
-);
+// Use regex to replace the whole handleApplyFilter function
+code = code.replace(/const handleApplyFilter = async \(filter: any\) => \{[\s\S]*?  \};/m, correctCode);
 
 fs.writeFileSync('src/components/DirectVideoPlayer.tsx', code);
-console.log("DirectVideoPlayer updated to use AdMob");
+console.log("DirectVideoPlayer fixed");
