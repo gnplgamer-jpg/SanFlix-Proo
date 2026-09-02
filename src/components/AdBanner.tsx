@@ -12,14 +12,21 @@ export function AdBanner({ className = "" }: AdBannerProps) {
 
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
+      
       // Native AdMob Banner
       const showNativeBanner = async () => {
         try {
+          // Listen for errors to understand why it's not showing
+          AdMob.addListener(BannerAdPluginEvents.FailedToLoad, (info) => {
+            console.error("AdMob Banner Failed:", info);
+            // alert("Banner failed to load. If it's a new AdMob ID, it may take 24 hours to show ads.");
+          });
+
           await AdMob.showBanner({
             adId: AD_CONFIG.admob.banner,
             adSize: BannerAdSize.BANNER,
-            position: BannerAdPosition.BOTTOM_CENTER,
-            margin: 0,
+            position: BannerAdPosition.TOP_CENTER, // Moved to top so it doesn't block BottomNav
+            margin: 60, // Push below header
             isTesting: false
           });
         } catch (e) {
@@ -27,6 +34,7 @@ export function AdBanner({ className = "" }: AdBannerProps) {
         }
       };
       showNativeBanner();
+
 
       return () => {
         AdMob.hideBanner().catch(console.error);
