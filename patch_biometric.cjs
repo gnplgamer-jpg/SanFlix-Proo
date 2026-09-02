@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+const fs = require('fs');
+let code = `import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Fingerprint, Lock, ShieldCheck, AlertCircle, Delete } from 'lucide-react';
 import { BiometricAuth } from '@aparajita/capacitor-biometric-auth';
@@ -97,7 +98,7 @@ export function BiometricLock({ onUnlock }: BiometricLockProps) {
 
         <div className="flex gap-4 mb-8">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className={`w-4 h-4 rounded-full border-2 ${pin.length > i ? 'bg-white border-white' : 'border-zinc-600'}`} />
+            <div key={i} className={\`w-4 h-4 rounded-full border-2 \${pin.length > i ? 'bg-white border-white' : 'border-zinc-600'}\`} />
           ))}
         </div>
 
@@ -147,3 +148,6 @@ export function BiometricLock({ onUnlock }: BiometricLockProps) {
     </div>
   );
 }
+`;
+fs.writeFileSync('src/components/BiometricLock.tsx', code);
+console.log('BiometricLock patched');

@@ -298,7 +298,7 @@ export function Discover({ content = [], onSelectMovie, unlockedContent = {} }: 
             {searchQuery.trim() !== '' ? (
                contentResults.length > 0 ? (
                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                   {contentResults.map((movie, index) => (
+                   {contentResults.slice(0, 50).map((movie, index) => (
                       <div 
                         key={`${movie.id || movie.firebase_id || 'movie'}-${index}`}
                         onClick={() => onSelectMovie && onSelectMovie(movie)}

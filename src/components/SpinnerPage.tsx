@@ -1,3 +1,4 @@
+import { AdPlayer } from "./AdPlayer";
 import { Capacitor } from "@capacitor/core";
 import { UnityAds } from "capacitor-unity-ads";
 import React, { useState, useEffect, useRef } from 'react';
@@ -399,61 +400,12 @@ export function SpinnerPage({ onClose, onReward, currentCoins }: SpinnerPageProp
       </div>
       <AnimatePresence>
         {showAd && (
-          <motion.div 
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-black flex flex-col"
-          >
-            {/* Ad Header */}
-            <div className="w-full h-14 flex justify-between items-center px-4 bg-zinc-900 border-b border-zinc-800 shrink-0">
-              <span className="text-zinc-400 text-xs font-bold px-2 py-1 bg-zinc-800 rounded">Advertisement</span>
-              <div className="flex items-center gap-3">
-                <span className="text-zinc-300 text-sm font-medium">
-                  {adTimer > 0 ? `Reward in ${adTimer}s` : 'Reward granted'}
-                </span>
-                <button 
-                  disabled={adTimer > 0} 
-                  onClick={() => { setShowAd(false); if (adPurpose === 'spin') { finishSpin(); } else if (adPurpose === 'checkin') { onReward(15); setDailyCheckInClaimed(true); localStorage.setItem('daily_checkin_' + new Date().toDateString(), 'true'); } else { onReward(20); setTrailerClaimed(true); localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true'); } }}
-                  className={`w-8 h-8 flex items-center justify-center rounded-full bg-zinc-800 text-white transition-opacity ${adTimer > 0 ? 'opacity-50 cursor-not-allowed' : 'opacity-100 hover:bg-zinc-700'}`}
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-            
-            {/* VIP Ad Content */}
-            <div className="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden bg-black">
-              {/* Glowing Background Effect */}
-              <div className="absolute inset-0 bg-red-600/10 blur-[120px] rounded-full pointer-events-none" />
-              
-              <div className="z-10 flex flex-col items-center text-center max-w-sm">
-                <div className="w-28 h-28 bg-gradient-to-br from-red-600 to-red-900 rounded-3xl p-1 mb-6 shadow-2xl shadow-red-600/40 flex items-center justify-center">
-                   <div className="w-full h-full bg-black rounded-[26px] flex items-center justify-center">
-                      <span className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-br from-red-400 to-red-700 tracking-tighter">SF</span>
-                   </div>
-                </div>
-                <h2 className="text-4xl font-black text-white mb-3 tracking-tight">SanFlix-Pro <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-red-600">VIP</span></h2>
-                <p className="text-zinc-400 text-lg mb-10 leading-relaxed max-w-[280px]">
-                  Unlock ad-free movies, 4K streaming, and watch without interruptions.
-                </p>
-                
-                <button className="w-full py-4 bg-gradient-to-r from-red-600 to-red-800 rounded-2xl font-bold text-lg text-white shadow-lg shadow-red-600/30 animate-pulse active:scale-95 transition-transform">
-                  Upgrade Now
-                </button>
-              </div>
-            </div>
-            
-            {/* Progress Bar */}
-            <div className="h-1.5 bg-zinc-900 shrink-0">
-              <motion.div 
-                className="h-full bg-red-600"
-                initial={{ width: "0%" }}
-                animate={{ width: "100%" }}
-                transition={{ duration: 5, ease: "linear" }}
-              />
-            </div>
-          </motion.div>
+          <AdPlayer onAdComplete={() => {
+            setShowAd(false);
+            if (adPurpose === 'spin') { finishSpin(); }
+            else if (adPurpose === 'checkin') { onReward(15); setDailyCheckInClaimed(true); localStorage.setItem('daily_checkin_' + new Date().toDateString(), 'true'); }
+            else { onReward(20); setTrailerClaimed(true); localStorage.setItem('daily_trailer_' + new Date().toDateString(), 'true'); }
+          }} />
         )}
       </AnimatePresence>
 

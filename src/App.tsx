@@ -7,6 +7,7 @@ import { Info, Play, Clock, Star, Tv, Heart, History, ChevronLeft, ChevronDown, 
 import { TopHeader } from './components/TopHeader';
 import { GamesHub } from './components/GamesHub';
 import { BottomNav } from './components/BottomNav';
+import { AppOpenAd } from "./components/AppOpenAd";
 import { AdminPanel } from './components/AdminPanel';
 import { Shop } from './components/Shop';
 import { CartScreen } from './components/CartScreen';
@@ -61,7 +62,6 @@ import { TrendingVideos } from './components/TrendingVideos';
 import { LiveTvScreen } from './components/LiveTvScreen';
 import { UnlockModal } from './components/UnlockModal';
 import { SpinnerPage } from './components/SpinnerPage';
-import { BiometricLock } from './components/BiometricLock';
 import { Globe, Settings, X, Sparkles, Bot, ExternalLink } from 'lucide-react';
 import { db, collection, getDocs, onSnapshot, addDoc, query, doc, auth, onAuthStateChanged, setDoc, getDoc, updateDoc } from './firebase';
 import { useCoinSystem } from './useCoinSystem';
@@ -236,9 +236,7 @@ export default function App() {
   }, []);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [appLockEnabled, setAppLockEnabled] = useState(() => localStorage.getItem("sanflix_app_lock") === "true");
-  const [isAppLocked, setIsAppLocked] = useState(localStorage.getItem("sanflix_app_lock") === "true");
-
+    
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -345,14 +343,14 @@ export default function App() {
 
   // --- LAYERED BACK NAVIGATION LOGIC ---
   const stateRefs = useRef({
-    globalVideo, showAuthModal, showPremiumModal, isAdPlaying, showSpinnerPage, reportingData, isRequestOpen, isChatOpen, selectedMovie, selectedCategory, isSearchActive, activeTab
+    globalVideo, showAuthModal, showPremiumModal, isAdPlaying, showSpinnerPage, reportingData, isRequestOpen, isChatOpen, selectedMovie, selectedCategory, isSearchActive, activeTab, unlockingMovie
   });
   
   useEffect(() => {
     stateRefs.current = {
-      globalVideo, showAuthModal, showPremiumModal, isAdPlaying, showSpinnerPage, reportingData, isRequestOpen, isChatOpen, selectedMovie, selectedCategory, isSearchActive, activeTab
+      globalVideo, showAuthModal, showPremiumModal, isAdPlaying, showSpinnerPage, reportingData, isRequestOpen, isChatOpen, selectedMovie, selectedCategory, isSearchActive, activeTab, unlockingMovie
     };
-  }, [globalVideo, showAuthModal, showSpinnerPage, reportingData, isRequestOpen, isChatOpen, selectedMovie, selectedCategory, isSearchActive, activeTab]);
+  }, [globalVideo, showAuthModal, showPremiumModal, isAdPlaying, showSpinnerPage, reportingData, isRequestOpen, isChatOpen, selectedMovie, selectedCategory, isSearchActive, activeTab, unlockingMovie]);
 
   useEffect(() => {
     let lastBackPress = 0;
@@ -369,6 +367,10 @@ export default function App() {
       // Layer 2: Top level Modals
       
       if (state.isAdPlaying) return;
+      if (state.unlockingMovie) {
+        setUnlockingMovie(null);
+        return;
+      }
       if (state.showPremiumModal) {
         setShowPremiumModal(false);
         return;
@@ -581,7 +583,7 @@ export default function App() {
     return () => clearTimeout(delayTimer);
   }, []);
 
-const handleSelectMovie = (movie: any) => {
+const handleSelectMovie = (movie: any, ignoreLock: boolean = false) => {
     if (!user) {
       setPendingMovie(movie);
       setShowAuthModal(true);
@@ -1042,8 +1044,7 @@ const handleSelectMovie = (movie: any) => {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans selection:bg-red-500/30">
-      {isAppLocked && <BiometricLock onUnlock={() => setIsAppLocked(false)} />}
-      {batterySaver && (
+            {batterySaver && (
         <div className="fixed inset-0 bg-black/40 pointer-events-none z-[9999]" style={{ mixBlendMode: 'multiply' }} />
       )}
       <AnimatePresence>
@@ -1865,8 +1866,6 @@ const handleSelectMovie = (movie: any) => {
             isAdminUnlocked={isAdminUnlocked}
             setIsAdminUnlocked={setIsAdminUnlocked}
             onChangeTab={setActiveTab}
-            appLockEnabled={appLockEnabled}
-            setAppLockEnabled={setAppLockEnabled}
             batterySaver={batterySaver}
             setBatterySaver={setBatterySaver}
           />
@@ -1972,7 +1971,7 @@ const handleSelectMovie = (movie: any) => {
               <div className="flex flex-col gap-3">
                 <button 
                   onClick={() => window.location.href = appUpdateData.url}
-                  className="w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-red-600/30 transition-all active:scale-95"
+                  className="relative z-10 w-full bg-red-600 hover:bg-red-500 text-white font-bold py-4 rounded-xl text-lg shadow-lg shadow-red-600/30 transition-all active:scale-95"
                 >
                   Update Now
                 </button>
@@ -2245,6 +2244,7 @@ const handleSelectMovie = (movie: any) => {
         )}
       </AnimatePresence>
       <NoticeModal />\n
+      <AppOpenAd />
       {/* Fraud Warning Modal */}
       <AnimatePresence>
         {fraudWarning && (
@@ -2256,7 +2256,7 @@ const handleSelectMovie = (movie: any) => {
               exit={{ opacity: 0, scale: 0.9, y: 50 }}
               className="relative w-full max-w-md bg-gradient-to-b from-black to-red-950 border-2 border-red-600 rounded-3xl p-8 shadow-[0_0_80px_rgba(220,38,38,0.4)] text-center overflow-hidden"
             >
-              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-10"></div>
+              <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/diagmonds-light.png')] opacity-10 pointer-events-none"></div>
               
               <div className="w-24 h-24 bg-red-600/20 rounded-full flex items-center justify-center mx-auto mb-6 border border-red-500 shadow-[0_0_30px_rgba(220,38,38,0.5)]">
                  <AlertTriangle className="w-12 h-12 text-red-500 animate-pulse" />
@@ -2273,7 +2273,7 @@ const handleSelectMovie = (movie: any) => {
               {fraudWarning.count < 3 && (
                 <button 
                   onClick={() => setFraudWarning(null)}
-                  className="w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.5)] transition-colors uppercase tracking-widest"
+                  className="relative z-10 w-full bg-red-600 hover:bg-red-700 text-white font-black py-4 rounded-xl shadow-[0_0_20px_rgba(220,38,38,0.5)] transition-colors uppercase tracking-widest"
                 >
                   I Understand
                 </button>
@@ -2364,7 +2364,7 @@ const handleSelectMovie = (movie: any) => {
             onUnlock={async () => {
               const movieId = unlockingMovie.id || unlockingMovie.firebase_id;
               await unlockMovie(movieId);
-              handleSelectMovie(unlockingMovie);
+              handleSelectMovie(unlockingMovie, true);
             }}
             onGoToSpinner={() => {
               setUnlockingMovie(null);

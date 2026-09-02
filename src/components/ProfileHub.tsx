@@ -14,8 +14,6 @@ interface ProfileHubProps {
   setIsAdminUnlocked: (val: boolean) => void;
   onChangeTab: (tab: string) => void;
   batterySaver: boolean;
-  appLockEnabled: boolean;
-  setAppLockEnabled: (val: boolean) => void;
   setBatterySaver: (val: boolean) => void;
 }
 
@@ -27,8 +25,6 @@ export function ProfileHub({
   setIsAdminUnlocked,
   onChangeTab,
   batterySaver,
-  appLockEnabled,
-  setAppLockEnabled,
   setBatterySaver,
   onLogout,
   onLoginClick
@@ -307,29 +303,7 @@ export function ProfileHub({
            <h3 className="font-bold text-white mb-4 flex items-center gap-2 border-l-2 border-[#E50914] pl-2">App Settings</h3>
            
            
-           <div className="flex items-center justify-between mb-4 bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/50">
-             <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-full ${appLockEnabled ? 'bg-[#E50914]/20 text-[#E50914]' : 'bg-zinc-800 text-zinc-400'}`}>
-                   <Lock className="w-5 h-5" />
-                </div>
-                <div>
-                   <p className="text-sm font-bold text-white">App Lock</p>
-                   <p className="text-[10px] text-zinc-400 max-w-[200px]">Require Fingerprint/PIN on open</p>
-                </div>
-             </div>
-             <button
-               onClick={() => {
-                 const newVal = !appLockEnabled;
-                 setAppLockEnabled(newVal);
-                 localStorage.setItem("sanflix_app_lock", String(newVal));
-               }}
-               className={`w-12 h-6 rounded-full transition-colors relative flex items-center ${appLockEnabled ? 'bg-[#E50914]' : 'bg-zinc-700'}`}
-             >
-               <div
-                 className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-all shadow-md ${appLockEnabled ? 'left-7' : 'left-1'}`}
-               />
-             </button>
-           </div>
+           
 
            <div className="flex items-center justify-between mb-4 bg-zinc-950/50 p-3 rounded-lg border border-zinc-800/50">
              <div className="flex items-center gap-3">

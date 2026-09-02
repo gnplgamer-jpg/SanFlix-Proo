@@ -199,7 +199,7 @@ export function TopHeader({ onSearch, isSearchActive, setIsSearchActive, searchQ
   };
 
   return (
-    <div className="sticky top-0 z-50 bg-black/90 backdrop-blur-md pb-2" ref={dropdownRef}>
+    <div className="sticky top-0 z-50 bg-black/90 bg-opacity-95 pb-2" ref={dropdownRef}>
       {/* Voice Error Toast */}
       <AnimatePresence>
         {voiceError && (

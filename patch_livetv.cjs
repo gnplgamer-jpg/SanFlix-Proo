@@ -1,17 +1,15 @@
 const fs = require('fs');
+let code = fs.readFileSync('src/components/LiveTvScreen.tsx', 'utf8');
 
-// Patch BottomNav
-let bottomNav = fs.readFileSync('src/components/BottomNav.tsx', 'utf8');
-bottomNav = bottomNav.replace("import { Home, Compass, Film, Tv, Heart, User, Settings, ShoppingBag, TrendingUp } from 'lucide-react';", "import { Home, Compass, Film, Tv, Heart, User, Settings, ShoppingBag, TrendingUp, MonitorPlay } from 'lucide-react';");
-bottomNav = bottomNav.replace("{ icon: TrendingUp, label: 'Trending', value: 'trending' },", "{ icon: MonitorPlay, label: 'Live TV', value: 'trending' },");
-fs.writeFileSync('src/components/BottomNav.tsx', bottomNav);
+code = code.replace(
+  '<p className="font-bold text-white mb-1">Stream Offline or CORS Blocked</p>',
+  '<p className="font-bold text-white mb-1 text-lg">Broadcast Offline</p>'
+);
 
-// Patch TrendingVideos.tsx (we can keep the component name as is to avoid breaking imports)
-let trending = fs.readFileSync('src/components/TrendingVideos.tsx', 'utf8');
-trending = trending.replace("HOT & TRENDING ON SANFLIX", "LIVE TV CHANNELS");
-trending = trending.replace("Global Trending Trailers", "Global Live Events & Trailers");
-trending = trending.replace("Loading global trending content...", "Loading live TV channels...");
-trending = trending.replace("No trending videos found.", "No live channels found.");
-fs.writeFileSync('src/components/TrendingVideos.tsx', trending);
+code = code.replace(
+  '<p className="text-xs">Try selecting another channel.</p>',
+  '<p className="text-sm max-w-[280px] mx-auto text-zinc-500 mb-4">This channel is currently not broadcasting any live events. Please check back later or select another channel.</p>\n              <div className="bg-white/10 px-4 py-2 rounded-full border border-white/5 animate-pulse">\n                <span className="text-xs text-white/70">Next Event: Scheduled soon</span>\n              </div>'
+);
 
-console.log("Patched to Live TV");
+fs.writeFileSync('src/components/LiveTvScreen.tsx', code);
+console.log('LiveTvScreen patched');

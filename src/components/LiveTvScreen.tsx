@@ -698,8 +698,11 @@ export function LiveTvScreen({ user, onRequirePremium }: LiveTvScreenProps) {
           {playerError ? (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-900 text-zinc-400 p-4 text-center">
               <WifiOff className="w-12 h-12 text-red-500 mb-2" />
-              <p className="font-bold text-white mb-1">Stream Offline or CORS Blocked</p>
-              <p className="text-xs">Try selecting another channel.</p>
+              <p className="font-bold text-white mb-1 text-lg">Broadcast Offline</p>
+              <p className="text-sm max-w-[280px] mx-auto text-zinc-500 mb-4">This channel is currently not broadcasting any live events. Please check back later or select another channel.</p>
+              <div className="bg-white/10 px-4 py-2 rounded-full border border-white/5 animate-pulse">
+                <span className="text-xs text-white/70">Next Event: Scheduled soon</span>
+              </div>
             </div>
           ) : (
              <video 

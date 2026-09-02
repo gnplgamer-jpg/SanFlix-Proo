@@ -46,7 +46,7 @@ export function Movies({ movies, onSelect , unlockedContent = {}}: MoviesProps) 
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-          {movies.map((movie, index) => (
+          {movies.slice(0, 50).map((movie, index) => (
             <div
               key={`${movie.id || movie.firebase_id || 'movie'}-${index}`}
               className="relative aspect-[2/3] rounded-xl overflow-hidden border border-zinc-800 bg-zinc-800/50 shadow-xl group cursor-pointer"
