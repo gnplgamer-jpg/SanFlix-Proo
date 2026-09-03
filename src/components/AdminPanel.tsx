@@ -296,14 +296,14 @@ export function AdminPanel() {
 
       const queryValue = rawQuery;
       const isNumeric = /^\d+$/.test(queryValue);
-      const isImdb = /^tt\d+$/.test(queryValue.toLowerCase());
+      const isImdb = /^tt\\d+$/.test((queryValue || "").toLowerCase());
       
       let movieId = queryValue;
       let mediaType = forceMediaType || 'movie'; // Default to movie
 
       if (isImdb) {
         // Search by IMDb ID
-        const findRes = await fetch(`/api/meta-data/find/${queryValue.trim().toLowerCase()}`);
+        const findRes = await fetch(`/api/meta-data/find/${(queryValue || "").trim().toLowerCase()}`);
         const findData = await findRes.json();
         
         if (findRes.ok && ((findData.movie_results && findData.movie_results.length > 0) || (findData.tv_results && findData.tv_results.length > 0))) {
@@ -600,7 +600,7 @@ export function AdminPanel() {
     if (item.id === 'TRENDING_SEARCHES') return false;
     if (item.is_deleted) return false;
     const matchesTab = contentTab === '18+' ? !!item.ad_gate : !item.ad_gate;
-    const matchesSearch = (item.title || undefined).toLowerCase().includes(contentSearchTerm.toLowerCase());
+    const matchesSearch = (item.title || "").toLowerCase().includes((contentSearchTerm || "").toLowerCase());
     return matchesTab && matchesSearch;
   });
   
@@ -753,12 +753,12 @@ export function AdminPanel() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div>
                   <label className="block text-xs font-medium text-zinc-400 mb-1">Product Title *</label>
-                  <input type="text" value={shopForm.title} onChange={e => setShopForm(prev => ({ ...prev, title: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" required />
+                  <input type="text" value={shopForm.title || ""} onChange={e => setShopForm(prev => ({ ...prev, title: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" required />
                 </div>
                 <div className="flex flex-col gap-2">
                   <div>
                     <label className="block text-xs font-medium text-zinc-400 mb-1">Image URL</label>
-                    <input type="text" value={shopForm.imageUrl} onChange={e => setShopForm(prev => ({ ...prev, imageUrl: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" />
+                    <input type="text" value={shopForm.imageUrl || ""} onChange={e => setShopForm(prev => ({ ...prev, imageUrl: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" />
                   </div>
                   {shopForm.imageUrl && (
                     <div className="mt-2">
@@ -782,11 +782,11 @@ export function AdminPanel() {
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-xs font-medium text-zinc-400 mb-1">Daraz Affiliate URL *</label>
-                  <input type="url" value={shopForm.affiliateUrl} onChange={e => setShopForm(prev => ({ ...prev, affiliateUrl: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" required />
+                  <input type="url" value={shopForm.affiliateUrl || ""} onChange={e => setShopForm(prev => ({ ...prev, affiliateUrl: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" required />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-xs font-medium text-zinc-400 mb-1">Price</label>
-                  <input type="text" placeholder="e.g. Rs. 499" value={shopForm.price || undefined} onChange={e => setShopForm(prev => ({ ...prev, price: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" />
+                  <input type="text" placeholder="e.g. Rs. 499" value={shopForm.price || ""} onChange={e => setShopForm(prev => ({ ...prev, price: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" />
                 </div>
                 <div className="md:col-span-1">
                   <label className="block text-xs font-medium text-zinc-400 mb-1">Rating (1-5)</label>
@@ -794,7 +794,7 @@ export function AdminPanel() {
                 </div>
                 <div className="md:col-span-2">
                   <label className="block text-xs font-medium text-zinc-400 mb-1">Description</label>
-                  <textarea rows={3} value={shopForm.description || undefined} onChange={e => setShopForm(prev => ({ ...prev, description: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" placeholder="Product description..."></textarea>
+                  <textarea rows={3} value={shopForm.description || ""} onChange={e => setShopForm(prev => ({ ...prev, description: e.target.value }))} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none text-white" placeholder="Product description..."></textarea>
                 </div>
               </div>
               
@@ -987,34 +987,34 @@ export function AdminPanel() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Title *</label>
-              <input type="text" name="title" value={formData.title} onChange={handleInputChange} required className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="text" name="title" value={formData.title || ""} onChange={handleInputChange} required className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">TMDb / IMDb ID or Link</label>
-              <input type="text" name="tmdb_id" value={formData.tmdb_id} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="text" name="tmdb_id" value={formData.tmdb_id || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-medium text-zinc-400 mb-1">Synopsis</label>
-            <textarea name="synopsis" rows={3} value={formData.synopsis} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none resize-none" />
+            <textarea name="synopsis" rows={3} value={formData.synopsis || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none resize-none" />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Cast & Crew</label>
-              <input type="text" name="cast_crew" value={formData.cast_crew} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="text" name="cast_crew" value={formData.cast_crew || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Rating</label>
-              <input type="text" name="rating" value={formData.rating} onChange={handleInputChange} placeholder="e.g. 8.5" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="text" name="rating" value={formData.rating || ""} onChange={handleInputChange} placeholder="e.g. 8.5" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Poster URL</label>
-              <input type="text" name="poster_url" value={formData.poster_url} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="text" name="poster_url" value={formData.poster_url || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
               {formData.poster_url && (
                 <div className="mt-2 h-32 rounded bg-zinc-900 overflow-hidden border border-zinc-800">
                   <img src={formData.poster_url} alt="Poster preview" className="w-full h-full object-contain" />
@@ -1023,7 +1023,7 @@ export function AdminPanel() {
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Backdrop URL</label>
-              <input type="text" name="backdrop_url" value={formData.backdrop_url} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="text" name="backdrop_url" value={formData.backdrop_url || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
               {formData.backdrop_url && (
                 <div className="mt-2 h-32 rounded bg-zinc-900 overflow-hidden border border-zinc-800">
                   <img src={formData.backdrop_url} alt="Backdrop preview" className="w-full h-full object-contain" />
@@ -1050,7 +1050,7 @@ export function AdminPanel() {
           <div className="grid grid-cols-2 gap-4 mt-4">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Media Format</label>
-              <select name="media_layout_format" value={formData.media_layout_format} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none">
+              <select name="media_layout_format" value={formData.media_layout_format || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none">
                 <option value="Movie Category">Movie Category</option>
                 <option value="TV Shows">TV Shows</option>
                 <option value="Web Series">Web Series</option>
@@ -1124,15 +1124,15 @@ export function AdminPanel() {
           <div className="grid grid-cols-3 gap-4">
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Release Date</label>
-              <input type="text" name="release_date" value={formData.release_date} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="text" name="release_date" value={formData.release_date || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Seasons</label>
-              <input type="number" name="season_count" value={formData.season_count} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="number" name="season_count" value={formData.season_count || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
             </div>
             <div>
               <label className="block text-xs font-medium text-zinc-400 mb-1">Episodes</label>
-              <input type="number" name="eps_count" value={formData.eps_count} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="number" name="eps_count" value={formData.eps_count || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
             </div>
           </div>
 
@@ -1152,25 +1152,25 @@ export function AdminPanel() {
             <div className="mb-4 space-y-3">
               <div>
                 <label className="block text-[10px] text-zinc-500 mb-1">Global Streaming Link (For standalone movies) *</label>
-                <input type="text" name="streaming_link_1" value={formData.streaming_link_1} onChange={handleInputChange} placeholder="SERVER 1: Primary Stream URL (Any Direct Network Link)" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+                <input type="text" name="streaming_link_1" value={formData.streaming_link_1 || ""} onChange={handleInputChange} placeholder="SERVER 1: Primary Stream URL (Any Direct Network Link)" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
                    <label className="block text-[10px] text-zinc-500 mb-1">Server 2 (Backup)</label>
-                   <input type="text" name="streaming_link_2" value={formData.streaming_link_2} onChange={handleInputChange} placeholder="Backup URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+                   <input type="text" name="streaming_link_2" value={formData.streaming_link_2 || ""} onChange={handleInputChange} placeholder="Backup URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
                 </div>
                 <div>
                    <label className="block text-[10px] text-zinc-500 mb-1">Server 3 (Backup)</label>
-                   <input type="text" name="streaming_link_3" value={formData.streaming_link_3} onChange={handleInputChange} placeholder="Backup URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+                   <input type="text" name="streaming_link_3" value={formData.streaming_link_3 || ""} onChange={handleInputChange} placeholder="Backup URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
                 </div>
                 <div>
                    <label className="block text-[10px] text-zinc-500 mb-1">Server 4 (Backup)</label>
-                   <input type="text" name="streaming_link_4" value={formData.streaming_link_4} onChange={handleInputChange} placeholder="Backup URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+                   <input type="text" name="streaming_link_4" value={formData.streaming_link_4 || ""} onChange={handleInputChange} placeholder="Backup URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
                 </div>
               </div>
               <div>
                 <label className="block text-[10px] text-zinc-500 mb-1">Stream Type (How should the app open this link?)</label>
-                <select name="stream_type" value={formData.stream_type} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none">
+                <select name="stream_type" value={formData.stream_type || ""} onChange={handleInputChange} className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none">
                   <option value="Auto-Detect">Auto-Detect (Recommended)</option>
                   <option value="User Choice">Let User Choose (Shows 3 Options)</option>
                   <option value="Direct Streaming">Direct Streaming (In-App Player)</option>
@@ -1220,14 +1220,14 @@ export function AdminPanel() {
                     </button>
                   </div>
                   <div className="grid grid-cols-3 gap-2">
-                    <input type="text" value={ep.url_2 || undefined} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_2=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 2 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
-                    <input type="text" value={ep.url_3 || undefined} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_3=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 3 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
-                    <input type="text" value={ep.url_4 || undefined} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_4=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 4 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
+                    <input type="text" value={ep.url_2 || ""} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_2=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 2 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
+                    <input type="text" value={ep.url_3 || ""} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_3=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 3 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
+                    <input type="text" value={ep.url_4 || ""} onChange={(e) => { const newEps=[...formData.episodes]; newEps[idx].url_4=e.target.value; setFormData(prev=>({ ...prev, episodes: newEps})); }} placeholder="Server 4 (Backup)" className="w-full bg-zinc-900 border border-zinc-700 py-1.5 px-3 rounded-lg text-xs focus:border-red-500 outline-none" />
                   </div>
                   <div className="flex gap-2">
                     <input
                       type="text"
-                      value={ep.download_url || undefined}
+                      value={ep.download_url || ""}
                       onChange={(e) => {
                          const newEps = [...formData.episodes];
                          newEps[idx].download_url = e.target.value;
@@ -1299,16 +1299,16 @@ export function AdminPanel() {
 
             <div className="pt-2 mt-2 border-t border-zinc-800">
               <label className="block text-[10px] text-zinc-500 mb-1">YouTube Trailer ID</label>
-              <input type="text" name="trailer_id" value={formData.trailer_id} onChange={handleInputChange} placeholder="YouTube Trailer ID (e.g. d9MyW72ELq0)" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+              <input type="text" name="trailer_id" value={formData.trailer_id || ""} onChange={handleInputChange} placeholder="YouTube Trailer ID (e.g. d9MyW72ELq0)" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
             </div>
 
             <div className="pt-2 mt-2 border-t border-zinc-800">
               <label className="block text-[10px] text-zinc-500 mb-1">Stream / Download Links (4 Qualities)</label>
               <div className="space-y-2">
-                <input type="text" name="download_link_480p" value={formData.download_link_480p} onChange={handleInputChange} placeholder="480p Stream/Download URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
-                <input type="text" name="download_link_720p" value={formData.download_link_720p} onChange={handleInputChange} placeholder="720p Stream/Download URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
-                <input type="text" name="download_link_1080p" value={formData.download_link_1080p} onChange={handleInputChange} placeholder="1080p Stream/Download URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
-                <input type="text" name="download_link_hdr" value={formData.download_link_hdr} onChange={handleInputChange} placeholder="HDR Stream/Download URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+                <input type="text" name="download_link_480p" value={formData.download_link_480p || ""} onChange={handleInputChange} placeholder="480p Stream/Download URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+                <input type="text" name="download_link_720p" value={formData.download_link_720p || ""} onChange={handleInputChange} placeholder="720p Stream/Download URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+                <input type="text" name="download_link_1080p" value={formData.download_link_1080p || ""} onChange={handleInputChange} placeholder="1080p Stream/Download URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
+                <input type="text" name="download_link_hdr" value={formData.download_link_hdr || ""} onChange={handleInputChange} placeholder="HDR Stream/Download URL" className="w-full bg-zinc-950 border border-zinc-700 py-2 px-3 rounded-lg text-sm focus:border-red-500 outline-none" />
               </div>
             </div>
           </div>
